@@ -1,0 +1,277 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Shuffle, Save } from 'lucide-react';
+import { AppNavbar } from '../components/AppNavbar';
+import { Footer } from '../components/Footer';
+import { useAuth } from '../contexts/AuthContext';
+
+interface ClothingItem {
+  id: string;
+  image: string;
+  gender: string;
+  type: 'top' | 'bottom' | 'footwear';
+  color: string;
+  uploadedAt: number;
+}
+
+interface Outfit {
+  top: ClothingItem | null;
+  bottom: ClothingItem | null;
+  footwear: ClothingItem | null;
+}
+
+interface WeeklyOutfit {
+  day: string;
+  outfit: Outfit | null;
+}
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+export function RandomizerPage() {
+  const { user } = useAuth();
+  const [items, setItems] = useState<ClothingItem[]>([]);
+  const [currentOutfit, setCurrentOutfit] = useState<Outfit>({
+    top: null,
+    bottom: null,
+    footwear: null,
+  });
+  const [weeklyOutfits, setWeeklyOutfits] = useState<WeeklyOutfit[]>(() => {
+    const stored = localStorage.getItem('weekly-outfits');
+    return stored ? JSON.parse(stored) : DAYS.map(day => ({ day, outfit: null }));
+  });
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('wardrobe-items');
+    if (stored) {
+      const allItems: ClothingItem[] = JSON.parse(stored);
+      // Filter by user gender if available
+      const filteredItems = user?.gender 
+        ? allItems.filter(item => item.gender === user.gender)
+        : allItems;
+      setItems(filteredItems);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    localStorage.setItem('weekly-outfits', JSON.stringify(weeklyOutfits));
+  }, [weeklyOutfits]);
+
+  const getRandomItem = (type: 'top' | 'bottom' | 'footwear'): ClothingItem | null => {
+    const itemsOfType = items.filter(item => item.type === type);
+    if (itemsOfType.length === 0) return null;
+    return itemsOfType[Math.floor(Math.random() * itemsOfType.length)];
+  };
+
+  const isOutfitUsedThisWeek = (outfit: Outfit): boolean => {
+    return weeklyOutfits.some(wo => {
+      if (!wo.outfit) return false;
+      return (
+        wo.outfit.top?.id === outfit.top?.id &&
+        wo.outfit.bottom?.id === outfit.bottom?.id &&
+        wo.outfit.footwear?.id === outfit.footwear?.id
+      );
+    });
+  };
+
+  const generateOutfit = () => {
+    if (items.length === 0) {
+      alert('Please add some items to your wardrobe first!');
+      return;
+    }
+
+    setIsSpinning(true);
+
+    // Spin animation
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    const tryGenerate = (): Outfit => {
+      return {
+        top: getRandomItem('top'),
+        bottom: getRandomItem('bottom'),
+        footwear: getRandomItem('footwear'),
+      };
+    };
+
+    let newOutfit = tryGenerate();
+    
+    // Try to avoid duplicates
+    while (isOutfitUsedThisWeek(newOutfit) && attempts < maxAttempts) {
+      newOutfit = tryGenerate();
+      attempts++;
+    }
+
+    // Simulate slot machine spin
+    setTimeout(() => {
+      setCurrentOutfit(newOutfit);
+      setIsSpinning(false);
+    }, 1500);
+  };
+
+  const saveToDay = (day: string) => {
+    if (!currentOutfit.top && !currentOutfit.bottom && !currentOutfit.footwear) {
+      alert('Please generate an outfit first!');
+      return;
+    }
+
+    setWeeklyOutfits(prev => prev.map(wo => 
+      wo.day === day ? { ...wo, outfit: currentOutfit } : wo
+    ));
+    setSelectedDay(day);
+    
+    setTimeout(() => setSelectedDay(null), 2000);
+  };
+
+  const clearDay = (day: string) => {
+    setWeeklyOutfits(prev => prev.map(wo => 
+      wo.day === day ? { ...wo, outfit: null } : wo
+    ));
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <AppNavbar />
+      
+      <div className="flex-1 px-6 py-24">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl mb-2">Outfit Randomizer</h1>
+            <p className="opacity-80">Generate unique outfit combinations</p>
+          </div>
+
+          {/* Slot Machine */}
+          <div className="mb-12">
+            <div className="grid grid-cols-3 gap-6 max-w-4xl mx-auto mb-8">
+              {(['top', 'bottom', 'footwear'] as const).map((type) => (
+                <div key={type} className="space-y-3">
+                  <h3 className="text-center capitalize opacity-80">{type}</h3>
+                  <motion.div
+                    animate={isSpinning ? { y: [-10, 10, -10] } : {}}
+                    transition={{ repeat: isSpinning ? Infinity : 0, duration: 0.3 }}
+                    className="aspect-square rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20"
+                  >
+                    <AnimatePresence mode="wait">
+                      {currentOutfit[type] ? (
+                        <motion.img
+                          key={currentOutfit[type]?.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          src={currentOutfit[type]?.image}
+                          alt={type}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-6xl opacity-20">
+                          ?
+                        </div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-center">
+              <button
+                onClick={generateOutfit}
+                disabled={isSpinning}
+                className="flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Shuffle className={`w-6 h-6 ${isSpinning ? 'animate-spin' : ''}`} />
+                <span className="text-lg">{isSpinning ? 'Generating...' : 'Randomize Outfit'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Weekly Calendar */}
+          <div>
+            <h2 className="text-2xl mb-6 text-center">This Week's Outfits</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              {weeklyOutfits.map((wo) => (
+                <div
+                  key={wo.day}
+                  className={`p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 transition-all ${
+                    selectedDay === wo.day ? 'ring-2 ring-green-500' : ''
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-semibold">{wo.day}</h3>
+                    {wo.outfit ? (
+                      <button
+                        onClick={() => clearDay(wo.day)}
+                        className="text-xs opacity-60 hover:opacity-100 hover:text-red-400 transition-all"
+                      >
+                        Clear
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => saveToDay(wo.day)}
+                        className="text-xs opacity-60 hover:opacity-100 hover:text-green-400 transition-all"
+                      >
+                        <Save className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {wo.outfit ? (
+                    <div className="space-y-2">
+                      {wo.outfit.top && (
+                        <div className="aspect-square rounded-lg overflow-hidden bg-white/5">
+                          <img
+                            src={wo.outfit.top.image}
+                            alt="Top"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      {wo.outfit.bottom && (
+                        <div className="aspect-square rounded-lg overflow-hidden bg-white/5">
+                          <img
+                            src={wo.outfit.bottom.image}
+                            alt="Bottom"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      {wo.outfit.footwear && (
+                        <div className="aspect-square rounded-lg overflow-hidden bg-white/5">
+                          <img
+                            src={wo.outfit.footwear.image}
+                            alt="Footwear"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="aspect-[3/4] rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center">
+                      <p className="text-xs opacity-40 text-center px-2">
+                        No outfit<br />saved
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {items.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-12 mt-8 rounded-xl bg-white/5 border border-white/10"
+            >
+              <p className="text-xl opacity-60 mb-2">No items in wardrobe</p>
+              <p className="opacity-40">Add items to your wardrobe to start generating outfits</p>
+            </motion.div>
+          )}
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  );
+}
