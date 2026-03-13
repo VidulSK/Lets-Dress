@@ -16,9 +16,9 @@ export function Navbar({ showAuth = false }: NavbarProps) {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
               <img 
-                src="https://images.unsplash.com/photo-1773024245335-2463a95dc54e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBmYXNoaW9uJTIwbG9nbyUyMGRlc2lnbnxlbnwxfHx8fDE3NzMzOTMwNDV8MA&ixlib=rb-4.1.0&q=80&w=200"
+                src="logo.png"
                 alt="Logo"
-                className="w-12 h-12 rounded-full object-cover"
+                className="w-12 h-12 rounded-full object-contain p-1 bg-gray-100 hover:scale-125 transition-transform"
               />
               <div>
                 <div className="font-semibold text-lg">Let's Dress</div>

@@ -253,7 +253,6 @@ export function WardrobePage() {
                 >
                   <Upload className="w-12 h-12 mx-auto mb-4 opacity-60" />
                   <p className="opacity-80">Click to upload image</p>
-                  <p className="text-sm opacity-60 mt-2">or drag and drop</p>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -288,8 +287,10 @@ export function WardrobePage() {
                       onChange={(e) => setGender(e.target.value)}
                       className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none"
                     >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
+                      <option value="" className="bg-[#D2C1B6] text-gray-400">Select gender</option>
+                      <option value="male" className="bg-[#D2C1B6] text-white">Male</option>
+                      <option value="female" className="bg-[#D2C1B6] text-white">Female</option>
+                      <option value="other" className="bg-[#D2C1B6] text-white">Other</option>
                     </select>
                   </div>
 
@@ -300,9 +301,9 @@ export function WardrobePage() {
                       onChange={(e) => setType(e.target.value as 'top' | 'bottom' | 'footwear')}
                       className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none"
                     >
-                      <option value="top">Top</option>
-                      <option value="bottom">Bottom</option>
-                      <option value="footwear">Footwear</option>
+                      <option value="top" className="bg-[#D2C1B6] text-white">Top</option>
+                      <option value="bottom" className="bg-[#D2C1B6] text-white">Bottom</option>
+                      <option value="footwear" className="bg-[#D2C1B6] text-white">Footwear</option>
                     </select>
                   </div>
 

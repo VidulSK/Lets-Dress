@@ -121,10 +121,10 @@ export function SignUpPage() {
                   onChange={handleChange}
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none transition-all"
                 >
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
+                  <option value="" className="bg-[#D2C1B6] text-gray-400">Select gender</option>
+                  <option value="male" className="bg-[#D2C1B6] text-white">Male</option>
+                  <option value="female" className="bg-[#D2C1B6] text-white">Female</option>
+                  <option value="other" className="bg-[#D2C1B6] text-white">Other</option>
                 </select>
               </div>
 
@@ -136,11 +136,11 @@ export function SignUpPage() {
                   onChange={handleChange}
                   className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none transition-all"
                 >
-                  <option value="">Select undertone</option>
-                  <option value="warm">Warm</option>
-                  <option value="cool">Cool</option>
-                  <option value="neutral">Neutral</option>
-                  <option value="dont-know">Don't Know</option>
+                  <option value="" className="bg-[#D2C1B6] text-gray-400">Select undertone</option>
+                  <option value="warm" className="bg-[#D2C1B6] text-white">Warm</option>
+                  <option value="cool" className="bg-[#D2C1B6] text-white">Cool</option>
+                  <option value="neutral" className="bg-[#D2C1B6] text-white">Neutral</option>
+                  <option value="dont-know" className="bg-[#D2C1B6] text-white">Don't Know</option>
                 </select>
               </div>
 

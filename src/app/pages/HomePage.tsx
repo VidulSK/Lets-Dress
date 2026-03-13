@@ -61,7 +61,7 @@ export function HomePage() {
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1771072426488-87e6bbcc0cf7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwd2FyZHJvYmUlMjBiYWNrZ3JvdW5kJTIwZWxlZ2FudHxlbnwxfHx8fDE3NzMzOTMwNDR8MA&ixlib=rb-4.1.0&q=80&w=1080)',
+            backgroundImage: 'url(https://thumbs.dreamstime.com/b/man-woman-fashion-models-looking-away-38190286.jpg)',
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/80 via-pink-800/70 to-orange-700/60" />
@@ -95,7 +95,7 @@ export function HomePage() {
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <a
-              href="#our-story"
+              href="/signup"
               className="px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all text-lg font-semibold"
             >
               Get Started
@@ -161,7 +161,7 @@ export function HomePage() {
             >
               <div className="aspect-[3/4] rounded-2xl overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1765175096278-efbc09f254dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdHlsaXNoJTIweW91bmclMjBtYW4lMjBmYXNoaW9ufGVufDF8fHx8MTc3MzM5MzA0NXww&ixlib=rb-4.1.0&q=80&w=1080"
+                  src="https://thumbs.dreamstime.com/b/two-men-fashion-models-wear-white-shirt-tie-posing-office-two-fashion-man-talkig-posing-126695382.jpg"
                   alt="Men's Fashion"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -181,7 +181,7 @@ export function HomePage() {
             >
               <div className="aspect-[3/4] rounded-2xl overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1764236027288-01496bf7489a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIweW91bmclMjB3b21hbiUyMGZhc2hpb258ZW58MXx8fHwxNzczMzkzMDQ1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                  src="https://akns-images.eonline.com/eol_images/Entire_Site/20151017/rs_634x951-151117082440-634.9.Kendall-Jenner-Kylie-Jenner-Topshop-Christmas-Holiday.jl.111715.jpg?fit=around%7C634:951&output-quality=90&crop=634:951;center,top"
                   alt="Women's Fashion"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
