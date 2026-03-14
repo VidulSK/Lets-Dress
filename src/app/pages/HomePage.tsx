@@ -57,10 +57,10 @@ export function HomePage() {
       </motion.div>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 bg-[#0f0c29]">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 bg-transparent transition-colors duration-500">
         {/* Animated Background Gradients */}
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-purple-600/30 blur-[120px] mix-blend-screen animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-pink-600/30 blur-[120px] mix-blend-screen animate-pulse delay-1000" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full dark:bg-purple-600/30 bg-purple-300/40 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full dark:bg-pink-600/30 bg-pink-300/40 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse delay-1000" />
         
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
@@ -73,13 +73,13 @@ export function HomePage() {
           initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 1, type: "spring", stiffness: 50 }}
-          className="relative z-10 text-center px-8 py-16 max-w-5xl rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]"
+          className="relative z-10 text-center px-8 py-16 max-w-5xl rounded-3xl dark:bg-white/5 bg-white/40 backdrop-blur-2xl border dark:border-white/10 border-white/60 shadow-[0_8px_32px_0_rgba(31,38,135,0.1)] dark:shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]"
         >
           <motion.div
              initial={{ opacity: 0, y: -20 }}
              animate={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
-             className="mb-4 inline-block px-4 py-1 rounded-full bg-white/10 border border-white/20 text-sm tracking-wider uppercase backdrop-blur-md"
+             className="mb-4 inline-block px-4 py-1 rounded-full dark:bg-white/10 bg-white/60 border dark:border-white/20 border-black/10 text-sm tracking-wider uppercase backdrop-blur-md dark:text-white text-gray-800"
           >
             Elevate Your Style
           </motion.div>
@@ -88,7 +88,7 @@ export function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
-            className="text-6xl md:text-8xl mb-6 font-bold tracking-tight bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent drop-shadow-sm"
+            className="text-6xl md:text-8xl mb-6 font-bold tracking-tight bg-gradient-to-r dark:from-white dark:via-purple-200 dark:to-pink-200 from-gray-900 via-purple-700 to-pink-600 bg-clip-text text-transparent drop-shadow-sm pb-4"
           >
             Your Digital Wardrobe
           </motion.h1>
@@ -96,7 +96,7 @@ export function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="text-xl md:text-2xl mb-10 text-white/80 font-light"
+            className="text-xl md:text-2xl mb-10 dark:text-white/80 text-gray-700 font-light"
           >
             Never waste time deciding what to wear again. Curate, randomize, and plan your outfits with elegance.
           </motion.p>
@@ -108,14 +108,14 @@ export function HomePage() {
           >
             <a
               href="/signup"
-              className="group relative px-8 py-4 rounded-full bg-white text-black text-lg font-semibold overflow-hidden transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+              className="group relative px-8 py-4 rounded-full dark:bg-white bg-gray-900 dark:text-black text-white text-lg font-semibold overflow-hidden transition-all hover:scale-105 shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
             >
-              <div className="absolute inset-0 w-0 bg-gradient-to-r from-purple-200 to-pink-200 transition-all duration-[250ms] ease-out group-hover:w-full" />
-              <span className="relative z-10 group-hover:text-purple-900 transition-colors">Start Curating</span>
+              <div className="absolute inset-0 w-0 bg-gradient-to-r dark:from-purple-200 dark:to-pink-200 from-purple-500 to-pink-500 transition-all duration-[300ms] ease-out group-hover:w-full" />
+              <span className="relative z-10 dark:group-hover:text-purple-900 group-hover:text-white transition-colors">Start Curating</span>
             </a>
             <a
               href="#perks"
-              className="px-8 py-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all text-lg hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+              className="px-8 py-4 rounded-full dark:bg-white/10 bg-white/50 hover:bg-white/60 dark:hover:bg-white/20 backdrop-blur-md border dark:border-white/20 border-black/10 transition-all text-lg dark:hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:text-white text-gray-900"
             >
               Learn More
             </a>
@@ -147,7 +147,7 @@ export function HomePage() {
       </section>
 
       {/* Trends Section */}
-      <section id="trends" className="py-20 px-6 bg-white/5 backdrop-blur-sm">
+      <section id="trends" className="py-20 px-6 dark:bg-white/5 bg-white/30 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -209,57 +209,73 @@ export function HomePage() {
       </section>
 
       {/* Perks Section */}
-      <section id="perks" className="py-20 px-6">
-        <div className="max-w-4xl mx-auto">
+      <section id="perks" className="py-20 px-6 overflow-hidden">
+        <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-16"
           >
             <Sparkles className="w-16 h-16 mx-auto mb-6 opacity-80" />
-            <h2 className="text-4xl md:text-5xl mb-4">Perks</h2>
-            <p className="text-2xl opacity-90 mb-12">No more thinking what to wear</p>
+            <h2 className="text-4xl md:text-5xl mb-4 font-bold bg-gradient-to-r dark:from-white dark:to-purple-200 from-gray-900 to-purple-800 bg-clip-text text-transparent">
+              Perks
+            </h2>
+            <p className="text-2xl opacity-90">No more thinking what to wear</p>
           </motion.div>
 
-          <div className="grid gap-6">
+          <div className="flex flex-col gap-12">
             {[
               {
                 title: 'Save Time Daily',
-                description: 'Reduce your morning routine by up to 30 minutes with instant outfit suggestions',
+                description: 'Reduce your morning routine by up to 30 minutes with instant outfit suggestions from your digitized collection.',
+                align: 'left'
               },
               {
                 title: 'Smart Organization',
-                description: 'Keep track of all your clothes in one digital space, easily searchable and categorized',
+                description: 'Keep track of all your clothes in one digital space, beautifully categorized and accessible directly from anywhere.',
+                align: 'right'
               },
               {
                 title: 'Maximize Your Wardrobe',
-                description: 'Discover new combinations from clothes you already own, reducing unnecessary purchases',
+                description: 'Rediscover hidden gems and combine fresh looks from clothes you already own to combat decision fatigue and over-purchasing.',
+                align: 'left'
               },
               {
                 title: 'Track Your Style',
-                description: 'See what you wear most and plan better purchases based on your actual habits',
+                description: 'Check what you naturally gravitate towards and make much better fashion choices based on actual, measured daily habits.',
+                align: 'right'
               },
               {
                 title: 'Never Repeat Outfits',
-                description: 'Our intelligent system ensures fresh combinations throughout the week',
-              },
-              {
-                title: 'Plan Ahead',
-                description: 'Schedule outfits for important events and never be caught unprepared',
+                description: 'Our intelligent rotation ensures you get creative, completely unique, fresh combinations spanning throughout the week.',
+                align: 'left'
               },
             ].map((perk, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="p-6 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all"
+                initial={{ opacity: 0, x: perk.align === 'left' ? -50 : 50, y: 20 }}
+                whileInView={{ opacity: 1, x: 0, y: 0 }}
+                transition={{ duration: 0.8, type: 'spring', damping: 20 }}
+                viewport={{ once: true, margin: "-100px" }}
+                className={`flex flex-col md:flex-row gap-6 md:gap-12 items-center ${perk.align === 'right' ? 'md:flex-row-reverse' : ''}`}
               >
-                <h3 className="text-xl mb-2">✨ {perk.title}</h3>
-                <p className="opacity-80">{perk.description}</p>
+                {/* Visual Placeholder */}
+                <div className="w-full md:w-1/2 aspect-video rounded-3xl dark:bg-white/5 bg-white/40 backdrop-blur-md border dark:border-white/10 border-white/60 p-8 flex items-center justify-center relative overflow-hidden group shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br dark:from-purple-500/10 dark:to-pink-500/10 from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 saturate-200 blur-3xl rounded-full dark:bg-purple-500/10 bg-purple-400/20 w-32 h-32 m-auto -z-10 absolute mix-blend-multiply dark:mix-blend-screen scale-50 group-hover:scale-150 transition-transform duration-700 ease-out" />
+                  <Sparkles className="w-12 h-12 opacity-50 dark:text-purple-300 text-purple-600 group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                
+                {/* Text Content */}
+                <div className="w-full md:w-1/2 space-y-4 px-4 md:px-0">
+                  <div className="inline-flex items-center justify-center p-3 rounded-2xl dark:bg-white/10 bg-white/80 backdrop-blur-sm shadow-sm border dark:border-white/5 border-black/5">
+                     <span className="text-xl font-bold dark:text-purple-300 text-purple-700">0{index + 1}</span>
+                  </div>
+                  <h3 className="text-3xl font-bold dark:text-white text-gray-900">{perk.title}</h3>
+                  <p className="text-lg opacity-80 leading-relaxed dark:text-white/80 text-gray-700">{perk.description}</p>
+                </div>
               </motion.div>
             ))}
           </div>
