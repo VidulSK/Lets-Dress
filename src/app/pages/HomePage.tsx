@@ -65,7 +65,7 @@ export function HomePage() {
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
           style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop)',
+            backgroundImage: 'url(/images/hero-bg.jpg)',
           }}
         />
         
@@ -174,7 +174,7 @@ export function HomePage() {
             >
               <div className="aspect-[3/4] rounded-2xl overflow-hidden">
                 <img
-                  src="https://thumbs.dreamstime.com/b/two-men-fashion-models-wear-white-shirt-tie-posing-office-two-fashion-man-talkig-posing-126695382.jpg"
+                  src="/images/mens-fashion.jpg"
                   alt="Men's Fashion"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -194,7 +194,7 @@ export function HomePage() {
             >
               <div className="aspect-[3/4] rounded-2xl overflow-hidden">
                 <img
-                  src="https://akns-images.eonline.com/eol_images/Entire_Site/20151017/rs_634x951-151117082440-634.9.Kendall-Jenner-Kylie-Jenner-Topshop-Christmas-Holiday.jl.111715.jpg?fit=around%7C634:951&output-quality=90&crop=634:951;center,top"
+                  src="/images/womens-fashion.jpg"
                   alt="Women's Fashion"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
@@ -225,56 +225,51 @@ export function HomePage() {
             <p className="text-2xl opacity-90">No more thinking what to wear</p>
           </motion.div>
 
-          <div className="flex flex-col gap-12">
+          <div className="flex flex-wrap justify-center gap-6 lg:gap-8">
             {[
               {
                 title: 'Save Time Daily',
                 description: 'Reduce your morning routine by up to 30 minutes with instant outfit suggestions from your digitized collection.',
-                align: 'left'
+                emoji: '⏱️'
               },
               {
                 title: 'Smart Organization',
                 description: 'Keep track of all your clothes in one digital space, beautifully categorized and accessible directly from anywhere.',
-                align: 'right'
+                emoji: '📁'
               },
               {
                 title: 'Maximize Your Wardrobe',
                 description: 'Rediscover hidden gems and combine fresh looks from clothes you already own to combat decision fatigue and over-purchasing.',
-                align: 'left'
+                emoji: '✨'
               },
               {
                 title: 'Track Your Style',
                 description: 'Check what you naturally gravitate towards and make much better fashion choices based on actual, measured daily habits.',
-                align: 'right'
+                emoji: '📈'
               },
               {
                 title: 'Never Repeat Outfits',
                 description: 'Our intelligent rotation ensures you get creative, completely unique, fresh combinations spanning throughout the week.',
-                align: 'left'
+                emoji: '🔄'
               },
             ].map((perk, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, x: perk.align === 'left' ? -50 : 50, y: 20 }}
-                whileInView={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ duration: 0.8, type: 'spring', damping: 20 }}
-                viewport={{ once: true, margin: "-100px" }}
-                className={`flex flex-col md:flex-row gap-6 md:gap-12 items-center ${perk.align === 'right' ? 'md:flex-row-reverse' : ''}`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: index * 0.1, type: 'spring', damping: 20 }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="flex flex-col w-full sm:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)] p-8 rounded-3xl dark:bg-white/5 bg-white/40 backdrop-blur-md border dark:border-white/10 border-white/60 shadow-lg hover:shadow-xl dark:hover:bg-white/10 hover:bg-white/50 transition-all group"
               >
-                {/* Visual Placeholder */}
-                <div className="w-full md:w-1/2 aspect-video rounded-3xl dark:bg-white/5 bg-white/40 backdrop-blur-md border dark:border-white/10 border-white/60 p-8 flex items-center justify-center relative overflow-hidden group shadow-lg">
-                  <div className="absolute inset-0 bg-gradient-to-br dark:from-purple-500/10 dark:to-pink-500/10 from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="absolute inset-0 saturate-200 blur-3xl rounded-full dark:bg-purple-500/10 bg-purple-400/20 w-32 h-32 m-auto -z-10 absolute mix-blend-multiply dark:mix-blend-screen scale-50 group-hover:scale-150 transition-transform duration-700 ease-out" />
-                  <Sparkles className="w-12 h-12 opacity-50 dark:text-purple-300 text-purple-600 group-hover:scale-110 transition-transform duration-500" />
+                {/* Emojified Box */}
+                <div className="w-16 h-16 mb-6 rounded-2xl dark:bg-white/10 bg-white/80 backdrop-blur-sm shadow-sm border dark:border-white/5 border-black/5 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300">
+                  {perk.emoji}
                 </div>
                 
                 {/* Text Content */}
-                <div className="w-full md:w-1/2 space-y-4 px-4 md:px-0">
-                  <div className="inline-flex items-center justify-center p-3 rounded-2xl dark:bg-white/10 bg-white/80 backdrop-blur-sm shadow-sm border dark:border-white/5 border-black/5">
-                     <span className="text-xl font-bold dark:text-purple-300 text-purple-700">0{index + 1}</span>
-                  </div>
-                  <h3 className="text-3xl font-bold dark:text-white text-gray-900">{perk.title}</h3>
-                  <p className="text-lg opacity-80 leading-relaxed dark:text-white/80 text-gray-700">{perk.description}</p>
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-bold dark:text-white text-gray-900">{perk.title}</h3>
+                  <p className="opacity-80 leading-relaxed dark:text-white/80 text-gray-700">{perk.description}</p>
                 </div>
               </motion.div>
             ))}
