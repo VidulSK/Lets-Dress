@@ -15,10 +15,16 @@ interface ClothingItem {
 }
 
 export function WardrobePage() {
-  const [items, setItems] = useState<ClothingItem[]>(() => {
-    const stored = localStorage.getItem('wardrobe-items');
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [items, setItems] = useState<ClothingItem[]>([]);
+  
+  useEffect(() => {
+    fetch('/api/wardrobe')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setItems(data);
+      })
+      .catch(console.error);
+  }, []);
   
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
@@ -33,9 +39,7 @@ export function WardrobePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    localStorage.setItem('wardrobe-items', JSON.stringify(items));
-  }, [items]);
+
 
   const handleFileSelect = async (file: File) => {
     setCurrentFile(file);
@@ -112,25 +116,54 @@ export function WardrobePage() {
     setShowCameraModal(false);
   };
 
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     if (previewImage) {
-      const newItem: ClothingItem = {
-        id: Date.now().toString(),
-        image: previewImage,
-        gender,
-        type,
-        color: detectedColor,
-        uploadedAt: Date.now(),
-      };
-      setItems(prev => [newItem, ...prev]);
-      setShowUploadModal(false);
-      setPreviewImage(null);
-      setCurrentFile(null);
+      const id = Date.now().toString();
+      const uploadedAt = Date.now();
+
+      const formData = new FormData();
+      formData.append('id', id);
+      formData.append('gender', gender);
+      formData.append('type', type);
+      formData.append('color', detectedColor);
+      formData.append('uploadedAt', uploadedAt.toString());
+      
+      if (currentFile) {
+        formData.append('image', currentFile);
+      } else {
+        formData.append('image', previewImage);
+      }
+
+      try {
+        const res = await fetch('/api/wardrobe', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (res.ok) {
+          const savedItem = await res.json();
+          setItems(prev => [savedItem, ...prev]);
+          setShowUploadModal(false);
+          setPreviewImage(null);
+          setCurrentFile(null);
+        } else {
+          alert('Failed to save item');
+        }
+      } catch (error) {
+        console.error('Upload Error:', error);
+      }
     }
   };
 
-  const handleDeleteItem = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+  const handleDeleteItem = async (id: string) => {
+    try {
+      const res = await fetch(`/api/wardrobe/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setItems(prev => prev.filter(item => item.id !== id));
+      }
+    } catch (error) {
+      console.error('Delete Error:', error);
+    }
   };
 
   return (

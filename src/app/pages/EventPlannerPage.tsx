@@ -11,17 +11,19 @@ interface Event {
 
 export function EventPlannerPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [events, setEvents] = useState<Event[]>(() => {
-    const stored = localStorage.getItem('calendar-events');
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [events, setEvents] = useState<Event[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [eventTitle, setEventTitle] = useState('');
   const [showEventModal, setShowEventModal] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('calendar-events', JSON.stringify(events));
-  }, [events]);
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setEvents(data);
+      })
+      .catch(console.error);
+  }, []);
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -56,16 +58,39 @@ export function EventPlannerPage() {
     setEventTitle('');
   };
 
-  const handleSaveEvent = () => {
+  const handleSaveEvent = async () => {
     if (selectedDate && eventTitle.trim()) {
-      setEvents(prev => [...prev, { date: selectedDate, title: eventTitle.trim() }]);
-      setShowEventModal(false);
-      setEventTitle('');
+      try {
+        const title = eventTitle.trim();
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: selectedDate, title })
+        });
+        if (res.ok) {
+          setEvents(prev => [...prev, { date: selectedDate, title }]);
+          setShowEventModal(false);
+          setEventTitle('');
+        }
+      } catch (e) {
+        console.error('Failed to save event:', e);
+      }
     }
   };
 
-  const handleDeleteEvent = (date: string, title: string) => {
-    setEvents(prev => prev.filter(e => !(e.date === date && e.title === title)));
+  const handleDeleteEvent = async (date: string, title: string) => {
+    try {
+      const res = await fetch('/api/events', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, title })
+      });
+      if (res.ok) {
+        setEvents(prev => prev.filter(e => !(e.date === date && e.title === title)));
+      }
+    } catch (e) {
+      console.error('Failed to delete event:', e);
+    }
   };
 
   const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);

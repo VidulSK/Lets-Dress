@@ -57,26 +57,38 @@ export function HomePage() {
       </motion.div>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 bg-[#0f0c29]">
+        {/* Animated Background Gradients */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-purple-600/30 blur-[120px] mix-blend-screen animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-pink-600/30 blur-[120px] mix-blend-screen animate-pulse delay-1000" />
+        
         <div 
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
           style={{
-            backgroundImage: 'url(https://thumbs.dreamstime.com/b/man-woman-fashion-models-looking-away-38190286.jpg)',
+            backgroundImage: 'url(https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop)',
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/80 via-pink-800/70 to-orange-700/60" />
         
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="relative z-10 text-center px-6 max-w-4xl"
+          initial={{ opacity: 0, scale: 0.95, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 1, type: "spring", stiffness: 50 }}
+          className="relative z-10 text-center px-8 py-16 max-w-5xl rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]"
         >
+          <motion.div
+             initial={{ opacity: 0, y: -20 }}
+             animate={{ opacity: 1, y: 0 }}
+             transition={{ delay: 0.2 }}
+             className="mb-4 inline-block px-4 py-1 rounded-full bg-white/10 border border-white/20 text-sm tracking-wider uppercase backdrop-blur-md"
+          >
+            Elevate Your Style
+          </motion.div>
+          
           <motion.h1
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            className="text-6xl md:text-8xl mb-6 bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
+            className="text-6xl md:text-8xl mb-6 font-bold tracking-tight bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent drop-shadow-sm"
           >
             Your Digital Wardrobe
           </motion.h1>
@@ -84,25 +96,26 @@ export function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="text-xl md:text-2xl mb-8 text-white/90"
+            className="text-xl md:text-2xl mb-10 text-white/80 font-light"
           >
-            Never waste time deciding what to wear again
+            Never waste time deciding what to wear again. Curate, randomize, and plan your outfits with elegance.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.8 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            transition={{ delay: 0.8, duration: 0.8 }}
+            className="flex flex-col sm:flex-row gap-6 justify-center items-center"
           >
             <a
               href="/signup"
-              className="px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all text-lg font-semibold"
+              className="group relative px-8 py-4 rounded-full bg-white text-black text-lg font-semibold overflow-hidden transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
             >
-              Get Started
+              <div className="absolute inset-0 w-0 bg-gradient-to-r from-purple-200 to-pink-200 transition-all duration-[250ms] ease-out group-hover:w-full" />
+              <span className="relative z-10 group-hover:text-purple-900 transition-colors">Start Curating</span>
             </a>
             <a
               href="#perks"
-              className="px-8 py-4 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all text-lg"
+              className="px-8 py-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all text-lg hover:shadow-[0_0_15px_rgba(255,255,255,0.1)]"
             >
               Learn More
             </a>

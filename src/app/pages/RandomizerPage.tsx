@@ -43,27 +43,39 @@ export function RandomizerPage() {
     bottom: null,
     footwear: null,
   });
-  const [weeklyOutfits, setWeeklyOutfits] = useState<WeeklyOutfit[]>(() => {
-    const stored = localStorage.getItem('weekly-outfits');
-    return stored ? JSON.parse(stored) : DAYS.map(day => ({ day, outfit: null }));
-  });
+  const [weeklyOutfits, setWeeklyOutfits] = useState<WeeklyOutfit[]>(
+    DAYS.map(day => ({ day, outfit: null }))
+  );
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('wardrobe-items');
-    if (stored) {
-      const allItems: ClothingItem[] = JSON.parse(stored);
-      const filteredItems = user?.gender 
-        ? allItems.filter(item => item.gender === user.gender)
-        : allItems;
-      setItems(filteredItems);
-    }
-  }, [user]);
+    // Fetch wardrobe items
+    fetch('/api/wardrobe')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const filteredItems = user?.gender 
+            ? data.filter(item => item.gender === user?.gender)
+            : data;
+          setItems(filteredItems);
+        }
+      })
+      .catch(console.error);
 
-  useEffect(() => {
-    localStorage.setItem('weekly-outfits', JSON.stringify(weeklyOutfits));
-  }, [weeklyOutfits]);
+    // Fetch weekly outfits
+    fetch('/api/outfits')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setWeeklyOutfits(prev => prev.map(wo => {
+            const found = data.find((d: any) => d.day === wo.day);
+            return found ? { day: wo.day, outfit: found.outfit } : wo;
+          }));
+        }
+      })
+      .catch(console.error);
+  }, [user]);
 
   // Unique Item Picker Algorithm
   const getUniqueItem = (type: keyof Outfit): ClothingItem | null => {
@@ -108,24 +120,45 @@ export function RandomizerPage() {
     }, 1500);
   };
 
-  const saveToDay = (day: string) => {
+  const saveToDay = async (day: string) => {
     if (!currentOutfit.top && !currentOutfit.bottom && !currentOutfit.footwear) {
       alert('Please generate an outfit first!');
       return;
     }
 
-    setWeeklyOutfits(prev => prev.map(wo => 
-      wo.day === day ? { ...wo, outfit: currentOutfit } : wo
-    ));
-    setSelectedDay(day);
-    
-    setTimeout(() => setSelectedDay(null), 2000);
+    try {
+      const res = await fetch('/api/outfits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ day, outfit: currentOutfit })
+      });
+      if (res.ok) {
+        setWeeklyOutfits(prev => prev.map(wo => 
+          wo.day === day ? { ...wo, outfit: currentOutfit } : wo
+        ));
+        setSelectedDay(day);
+        setTimeout(() => setSelectedDay(null), 2000);
+      }
+    } catch (e) {
+      console.error('Failed to save outfit:', e);
+    }
   };
 
-  const clearDay = (day: string) => {
-    setWeeklyOutfits(prev => prev.map(wo => 
-      wo.day === day ? { ...wo, outfit: null } : wo
-    ));
+  const clearDay = async (day: string) => {
+    try {
+      const res = await fetch('/api/outfits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ day, outfit: null })
+      });
+      if (res.ok) {
+        setWeeklyOutfits(prev => prev.map(wo => 
+          wo.day === day ? { ...wo, outfit: null } : wo
+        ));
+      }
+    } catch (e) {
+      console.error('Failed to clear outfit:', e);
+    }
   };
 
   return (

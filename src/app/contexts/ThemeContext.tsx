@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 type Theme = 'light' | 'dark';
 
@@ -11,17 +12,30 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem('outfit-theme');
-    return (stored as Theme) || 'light';
+    // Determine initial theme from HTML attribute which might have been set by SSR/Auth
+    return (document.documentElement.getAttribute('data-theme') as Theme) || 'light';
   });
 
+  const { user } = useAuth();
+
   useEffect(() => {
-    localStorage.setItem('outfit-theme', theme);
+    if (user?.theme) {
+      setTheme(user.theme as Theme);
+    }
+  }, [user]);
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    fetch('/api/auth/theme', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: newTheme })
+    }).catch(console.error);
   };
 
   return (

@@ -1,62 +1,87 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
+  id?: number;
   username: string;
-  password: string;
-  age: string;
   email: string;
-  phone: string;
-  gender: string;
-  skinUndertone: string;
-  favoriteColor: string;
+  age?: string;
+  phone?: string;
+  gender?: string;
+  skinUndertone?: string;
+  favoriteColor?: string;
+  theme?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
-  signup: (userData: User) => void;
-  logout: () => void;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  signup: (userData: any) => Promise<void>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('outfit-user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [users, setUsers] = useState<User[]>(() => {
-    const stored = localStorage.getItem('outfit-users');
-    return stored ? JSON.parse(stored) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('outfit-user', JSON.stringify(user));
-  }, [user]);
-
-  useEffect(() => {
-    localStorage.setItem('outfit-users', JSON.stringify(users));
-  }, [users]);
-
-  const signup = (userData: User) => {
-    setUsers(prev => [...prev, userData]);
-    setUser(userData);
-  };
-
-  const login = (username: string, password: string) => {
-    const foundUser = users.find(
-      u => u.username === username && u.password === password
-    );
-    if (foundUser) {
-      setUser(foundUser);
-      return true;
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+    } catch (err) {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
     }
-    return false;
   };
 
-  const logout = () => {
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const signup = async (userData: any) => {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Failed to sign up');
+    }
+    await checkAuth();
+  };
+
+  const login = async (username: string, password: string) => {
+    try {
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      
+      if (res.ok) {
+        await checkAuth();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
   };
 
@@ -64,9 +89,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{ 
       user, 
       isAuthenticated: !!user, 
+      isLoading,
       login, 
       signup, 
-      logout 
+      logout,
+      checkAuth
     }}>
       {children}
     </AuthContext.Provider>
