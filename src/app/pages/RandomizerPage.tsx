@@ -30,6 +30,14 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export function RandomizerPage() {
   const { user } = useAuth();
   const [items, setItems] = useState<ClothingItem[]>([]);
+  
+  // Track history to ensure 3 unique consecutive shuffles
+  const [history, setHistory] = useState<{ top: string[]; bottom: string[]; footwear: string[] }>({
+    top: [],
+    bottom: [],
+    footwear: [],
+  });
+
   const [currentOutfit, setCurrentOutfit] = useState<Outfit>({
     top: null,
     bottom: null,
@@ -46,7 +54,6 @@ export function RandomizerPage() {
     const stored = localStorage.getItem('wardrobe-items');
     if (stored) {
       const allItems: ClothingItem[] = JSON.parse(stored);
-      // Filter by user gender if available
       const filteredItems = user?.gender 
         ? allItems.filter(item => item.gender === user.gender)
         : allItems;
@@ -58,21 +65,21 @@ export function RandomizerPage() {
     localStorage.setItem('weekly-outfits', JSON.stringify(weeklyOutfits));
   }, [weeklyOutfits]);
 
-  const getRandomItem = (type: 'top' | 'bottom' | 'footwear'): ClothingItem | null => {
+  // Unique Item Picker Algorithm
+  const getUniqueItem = (type: keyof Outfit): ClothingItem | null => {
     const itemsOfType = items.filter(item => item.type === type);
     if (itemsOfType.length === 0) return null;
-    return itemsOfType[Math.floor(Math.random() * itemsOfType.length)];
-  };
 
-  const isOutfitUsedThisWeek = (outfit: Outfit): boolean => {
-    return weeklyOutfits.some(wo => {
-      if (!wo.outfit) return false;
-      return (
-        wo.outfit.top?.id === outfit.top?.id &&
-        wo.outfit.bottom?.id === outfit.bottom?.id &&
-        wo.outfit.footwear?.id === outfit.footwear?.id
-      );
-    });
+    const recentIds = history[type];
+    // Filter out items that appeared in the last 2 shuffles
+    const availableItems = itemsOfType.filter(item => !recentIds.includes(item.id));
+
+    // Fallback if wardrobe is too small: just pick any item that isn't the current one
+    const pool = availableItems.length > 0 
+      ? availableItems 
+      : itemsOfType.filter(i => i.id !== currentOutfit[type]?.id);
+
+    return pool[Math.floor(Math.random() * pool.length)] || itemsOfType[0];
   };
 
   const generateOutfit = () => {
@@ -83,29 +90,20 @@ export function RandomizerPage() {
 
     setIsSpinning(true);
 
-    // Spin animation
-    let attempts = 0;
-    const maxAttempts = 100;
-    
-    const tryGenerate = (): Outfit => {
-      return {
-        top: getRandomItem('top'),
-        bottom: getRandomItem('bottom'),
-        footwear: getRandomItem('footwear'),
-      };
-    };
+    const newTop = getUniqueItem('top');
+    const newBottom = getUniqueItem('bottom');
+    const newFootwear = getUniqueItem('footwear');
 
-    let newOutfit = tryGenerate();
-    
-    // Try to avoid duplicates
-    while (isOutfitUsedThisWeek(newOutfit) && attempts < maxAttempts) {
-      newOutfit = tryGenerate();
-      attempts++;
-    }
+    // Update history tracking (keeping the last 2 items)
+    setHistory(prev => ({
+      top: [newTop?.id, ...prev.top].filter(Boolean).slice(0, 2) as string[],
+      bottom: [newBottom?.id, ...prev.bottom].filter(Boolean).slice(0, 2) as string[],
+      footwear: [newFootwear?.id, ...prev.footwear].filter(Boolean).slice(0, 2) as string[],
+    }));
 
     // Simulate slot machine spin
     setTimeout(() => {
-      setCurrentOutfit(newOutfit);
+      setCurrentOutfit({ top: newTop, bottom: newBottom, footwear: newFootwear });
       setIsSpinning(false);
     }, 1500);
   };
