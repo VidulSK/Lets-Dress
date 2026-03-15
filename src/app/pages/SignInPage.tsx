@@ -47,7 +47,7 @@ export function SignInPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-5xl font-bold mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r dark:from-white dark:to-purple-200 from-gray-900 to-purple-800"
+          className="text-5xl font-bold mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r dark:from-white dark:to-purple-200 from-gray-900 to-purple-800 -mt-28"
         >
           Welcome Back<br />to Your Wardrobe
         </motion.h2>
