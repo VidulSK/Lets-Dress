@@ -48,7 +48,7 @@ export function SignUpPage() {
       <div className="hidden lg:flex lg:w-5/12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br dark:from-purple-900/60 dark:to-black/80 from-purple-300/30 to-white/50 z-10 mix-blend-multiply" />
         <img 
-          src="public\images\signUp.avif"
+          src="public/images/signUp.jpg"
           alt="Fashion Wardrobe" 
           className="absolute inset-0 w-full h-full object-cover scale-105"
         />
