@@ -7,7 +7,7 @@ import { ArrowRight, Lock, User } from 'lucide-react';
 export function SignInPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -15,7 +15,7 @@ export function SignInPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // login function will now return a promise when using the API backend
     if (await login(formData.username, formData.password)) {
       navigate('/wardrobe');
@@ -34,33 +34,33 @@ export function SignInPage() {
   return (
     <div className="min-h-screen flex bg-transparent transition-colors duration-500">
       {/* Left side - Image & Branding */}
-    <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br dark:from-purple-900/60 dark:to-black/80 from-purple-300/30 to-white/50 z-10 mix-blend-multiply" />
-      <img 
-        src="images/signIn.jpg" 
-        alt="Fashion" 
-        className="absolute inset-0 w-full h-full object-cover scale-105"
-      />
-      {/* CHANGE: Changed justify-end to justify-start and added pt-32 to push it slightly down from the very top */}
-      <div className="relative z-20 flex flex-col justify-start p-16 pt-32 h-full text-white">
-        <motion.h2 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-5xl font-bold mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r dark:from-white dark:to-purple-200 from-gray-900 to-purple-800"
-        >
-          Welcome Back<br />to Your Wardrobe
-        </motion.h2>
-        <motion.p 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-lg/relaxed dark:opacity-80 dark:text-white text-gray-900 max-w-md font-medium"
-        >
-          Access your smartly curated outfits and seamlessly plan your week ahead.
-        </motion.p>
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br dark:from-purple-900/60 dark:to-black/80 from-purple-300/30 to-white/50 z-10 mix-blend-multiply" />
+        <img
+          src="images/signIn.jpg"
+          alt="Fashion"
+          className="absolute inset-0 w-full h-full object-cover scale-105"
+        />
+        {/* CHANGE: Changed justify-end to justify-start and added pt-32 to push it slightly down from the very top */}
+        <div className="relative z-20 flex flex-col justify-start p-16 pt-32 h-full text-white">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-5xl font-bold mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r dark:from-white dark:to-purple-200 from-gray-900 to-purple-800 -mt-28"
+          >
+            Welcome Back<br />to Your Wardrobe
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-lg/relaxed dark:opacity-80 dark:text-white text-gray-900 max-w-md font-medium"
+          >
+            Access your smartly curated outfits and seamlessly plan your week ahead.
+          </motion.p>
+        </div>
       </div>
-    </div>
 
       {/* Right side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden">
@@ -68,7 +68,7 @@ export function SignInPage() {
         <div className="absolute top-[-20%] right-[-10%] w-[40vw] h-[40vw] rounded-full dark:bg-purple-600/20 bg-purple-300/40 blur-[100px] pointer-events-none" />
         <div className="absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full dark:bg-pink-600/20 bg-pink-300/40 blur-[100px] pointer-events-none" />
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
