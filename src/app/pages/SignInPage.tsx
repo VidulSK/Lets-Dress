@@ -34,32 +34,33 @@ export function SignInPage() {
   return (
     <div className="min-h-screen flex bg-transparent transition-colors duration-500">
       {/* Left side - Image & Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br dark:from-purple-900/60 dark:to-black/80 from-purple-300/30 to-white/50 z-10 mix-blend-multiply" />
-        <img 
-          src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop" 
-          alt="Fashion" 
-          className="absolute inset-0 w-full h-full object-cover scale-105"
-        />
-        <div className="relative z-20 flex flex-col justify-end p-16 h-full text-white">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-5xl font-bold mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r dark:from-white dark:to-purple-200 from-gray-900 to-purple-800"
-          >
-            Welcome Back<br />to Your Wardrobe
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-lg/relaxed dark:opacity-80 dark:text-white text-gray-900 max-w-md font-medium"
-          >
-            Access your smartly curated outfits and seamlessly plan your week ahead.
-          </motion.p>
-        </div>
+    <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br dark:from-purple-900/60 dark:to-black/80 from-purple-300/30 to-white/50 z-10 mix-blend-multiply" />
+      <img 
+        src="public/images/signIn.avif" 
+        alt="Fashion" 
+        className="absolute inset-0 w-full h-full object-cover scale-105"
+      />
+      {/* CHANGE: Changed justify-end to justify-start and added pt-32 to push it slightly down from the very top */}
+      <div className="relative z-20 flex flex-col justify-start p-16 pt-32 h-full text-white">
+        <motion.h2 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-5xl font-bold mb-4 leading-tight bg-clip-text text-transparent bg-gradient-to-r dark:from-white dark:to-purple-200 from-gray-900 to-purple-800"
+        >
+          Welcome Back<br />to Your Wardrobe
+        </motion.h2>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-lg/relaxed dark:opacity-80 dark:text-white text-gray-900 max-w-md font-medium"
+        >
+          Access your smartly curated outfits and seamlessly plan your week ahead.
+        </motion.p>
       </div>
+    </div>
 
       {/* Right side - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden">
