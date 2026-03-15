@@ -32,7 +32,7 @@ export function HomePage() {
         initial={{ x: -300 }}
         animate={{ x: sidebarOpen ? 0 : -300 }}
         transition={{ type: 'spring', damping: 20 }}
-        className="fixed left-0 top-0 h-full w-72 bg-white/10 backdrop-blur-xl border-r border-white/10 z-40 pt-24 px-6"
+        className="fixed left-0 top-0 h-full w-72 bg-white/10 backdrop-blur-xl border-r border-white/10 z-40 pt-24 px-6 mt-[35pt]"
       >
         <div className="flex flex-col gap-4">
           <button
