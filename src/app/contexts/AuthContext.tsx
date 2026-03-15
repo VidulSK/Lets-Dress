@@ -22,6 +22,16 @@ interface AuthContextType {
   checkAuth: () => Promise<void>;
 }
 
+const safeJson = async (res: Response) => {
+  const text = await res.text();
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch (e) {
+    console.error('Failed to parse JSON:', text);
+    return null;
+  }
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -32,8 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('/api/auth/me');
       if (res.ok) {
-        const userData = await res.json();
-        setUser(userData);
+        const userData = await safeJson(res);
+        if (userData) {
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
@@ -56,8 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     
     if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error || 'Failed to sign up');
+      const data = await safeJson(res);
+      throw new Error(data?.error || 'Failed to sign up');
     }
     await checkAuth();
   };

@@ -44,20 +44,29 @@ const requireAuth = (req, res, next) => {
 // --- AUTH ROUTES ---
 app.post('/api/auth/signup', (req, res) => {
   const { username, password, email, age, phone, gender, skinUndertone, favoriteColor } = req.body;
+  
   if (!username || !password || !email) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const stmt = db.prepare(`INSERT INTO users (username, password, email, age, phone, gender, skinUndertone, favoriteColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-  stmt.run([username, password, email, age, phone, gender, skinUndertone, favoriteColor], function (err) {
+  const query = `INSERT INTO users (username, password, email, age, phone, gender, skinUndertone, favoriteColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  const params = [username, password, email, age || null, phone || null, gender || null, skinUndertone || null, favoriteColor || null];
+
+  db.run(query, params, function (err) {
     if (err) {
+      console.error('Signup error:', err);
       if (err.message.includes('UNIQUE constraint failed')) {
         return res.status(409).json({ error: 'Username or email already exists' });
       }
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: 'Internal server error during account creation' });
     }
+    
     const userId = this.lastID;
-    res.cookie('userId', userId, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    res.cookie('userId', userId, { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
     res.status(201).json({ id: userId, username, email });
   });
 });
