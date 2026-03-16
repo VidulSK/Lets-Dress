@@ -48,18 +48,21 @@ app.post('/api/auth/signup', (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const stmt = db.prepare(`INSERT INTO users (username, password, email, age, phone, gender, skinUndertone, favoriteColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-  stmt.run([username, password, email, age, phone, gender, skinUndertone, favoriteColor], function (err) {
-    if (err) {
-      if (err.message.includes('UNIQUE constraint failed')) {
-        return res.status(409).json({ error: 'Username or email already exists' });
+  db.run(
+    `INSERT INTO users (username, password, email, age, phone, gender, skinUndertone, favoriteColor) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [username, password, email, age, phone, gender, skinUndertone, favoriteColor],
+    function (err) {
+      if (err) {
+        if (err.message.includes('UNIQUE constraint failed')) {
+          return res.status(409).json({ error: 'Username or email already exists' });
+        }
+        return res.status(500).json({ error: err.message });
       }
-      return res.status(500).json({ error: err.message });
+      const userId = this.lastID;
+      res.cookie('userId', userId, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+      res.status(201).json({ id: userId, username, email });
     }
-    const userId = this.lastID;
-    res.cookie('userId', userId, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-    res.status(201).json({ id: userId, username, email });
-  });
+  );
 });
 
 app.post('/api/auth/signin', (req, res) => {
