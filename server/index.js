@@ -11,10 +11,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174'], credentials: true })); // Default Vite port is 5173
+const isDev = process.env.NODE_ENV !== 'production';
+app.use(cors({
+  origin: isDev ? ['http://localhost:5173', 'http://localhost:5174'] : true,
+  credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -242,6 +246,15 @@ app.delete('/api/events', requireAuth, (req, res) => {
     res.json({ success: true });
   });
 });
+
+// In production, serve the Vite build and handle SPA routing
+if (!isDev) {
+  const distPath = path.join(__dirname, '../dist');
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
