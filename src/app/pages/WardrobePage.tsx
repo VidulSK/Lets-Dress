@@ -296,38 +296,56 @@ export function WardrobePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="aspect-square rounded-xl overflow-hidden bg-white/5">
-                    <img
-                      src={previewImage}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
+                  {/* Replace the preview block in your Upload Modal with this: */}
+                  <div className="space-y-4"> {/* Increased spacing for better UI */}
+                    <div className="flex justify-center">
+                      <div className="relative w-60 h-60 rounded-xl overflow-hidden bg-white/10 border border-white/20 shadow-xl">
+                        <img
+                          src={previewImage}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Optional: Add a small clear button to go back to upload state */}
+                        <button 
+                          onClick={() => setPreviewImage(null)}
+                          className="absolute top-1 right-1 p-1 bg-black/50 rounded-full hover:bg-black/80 transition-colors"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Color Detection Row - Adjusted for the new smaller layout */}
+                    <div className="flex items-center justify-center gap-3 bg-white/5 py-2 rounded-lg">
+                      <span className="text-xs uppercase tracking-wider opacity-60">Detected:</span>
+                      <div
+                        className="w-6 h-6 rounded-full border border-white/40 shadow-sm"
+                        style={{ backgroundColor: detectedColor }}
+                      />
+                      <span className="text-sm font-mono opacity-80">{detectedColor}</span>
+                    </div>
+
+                    {/* ... rest of your form (Gender/Type selects) ... */}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm opacity-80">Detected color:</span>
-                    <div
-                      className="w-10 h-10 rounded-full border-2 border-white"
-                      style={{ backgroundColor: detectedColor }}
-                    />
-                    <span className="text-sm opacity-60">{detectedColor}</span>
-                  </div>
-
-                  <div>
+                  <div className="flex gap-4">
+                  {/* Gender Select */}
+                  <div className="flex-1">
                     <label className="block mb-2 text-sm opacity-80">Gender</label>
                     <select
                       value={gender}
                       onChange={(e) => setGender(e.target.value)}
                       className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none"
                     >
-                      <option value="" className="bg-[#D2C1B6] text-gray-400">Select gender</option>
+                      <option value="" className="bg-[#D2C1B6] text-gray-400">Select</option>
                       <option value="male" className="bg-[#D2C1B6] text-white">Male</option>
                       <option value="female" className="bg-[#D2C1B6] text-white">Female</option>
                       <option value="other" className="bg-[#D2C1B6] text-white">Other</option>
                     </select>
                   </div>
 
-                  <div>
+                  {/* Type Select */}
+                  <div className="flex-1">
                     <label className="block mb-2 text-sm opacity-80">Type</label>
                     <select
                       value={type}
@@ -339,6 +357,7 @@ export function WardrobePage() {
                       <option value="footwear" className="bg-[#D2C1B6] text-white">Footwear</option>
                     </select>
                   </div>
+                </div>
 
                   <button
                     onClick={handleSaveItem}
