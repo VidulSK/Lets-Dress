@@ -27,7 +27,27 @@ const SCHEMA_SQLITE = `
     gender TEXT NOT NULL,
     type TEXT NOT NULL,
     color TEXT NOT NULL,
+    colorName TEXT DEFAULT '',
+    occasions TEXT DEFAULT '',
+    accessoryType TEXT DEFAULT '',
     uploadedAt INTEGER NOT NULL,
+    FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE TABLE IF NOT EXISTS weekly_outfits (
+    userId INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    topItem TEXT,
+    bottomItem TEXT,
+    footwearItem TEXT,
+    PRIMARY KEY(userId, date),
+    FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    title TEXT NOT NULL,
+    dressType TEXT DEFAULT '',
     FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
   );
 `;
@@ -47,7 +67,27 @@ const SCHEMA_PG = `
     gender TEXT NOT NULL,
     type TEXT NOT NULL,
     color TEXT NOT NULL,
+    "colorName" TEXT DEFAULT '',
+    occasions TEXT DEFAULT '',
+    "accessoryType" TEXT DEFAULT '',
     "uploadedAt" BIGINT NOT NULL,
+    FOREIGN KEY("userId") REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE TABLE IF NOT EXISTS weekly_outfits (
+    "userId" INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    "topItem" TEXT,
+    "bottomItem" TEXT,
+    "footwearItem" TEXT,
+    PRIMARY KEY("userId", date),
+    FOREIGN KEY("userId") REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE TABLE IF NOT EXISTS events (
+    id SERIAL PRIMARY KEY,
+    "userId" INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    title TEXT NOT NULL,
+    "dressType" TEXT DEFAULT '',
     FOREIGN KEY("userId") REFERENCES users(id) ON DELETE CASCADE
   );
 `;
@@ -70,8 +110,17 @@ sqliteDb = await new Promise((resolve) => {
   const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error("SQLite Load Error:", err.message);
     db.exec(SCHEMA_SQLITE, () => {
-      console.log('✔ Local SQLite ready.');
-      resolve(db);
+      // Migrate existing tables: add new columns if missing
+      const migrations = [
+        `ALTER TABLE wardrobe_items ADD COLUMN colorName TEXT DEFAULT ''`,
+        `ALTER TABLE wardrobe_items ADD COLUMN occasions TEXT DEFAULT ''`,
+        `ALTER TABLE wardrobe_items ADD COLUMN accessoryType TEXT DEFAULT ''`,
+        `ALTER TABLE events ADD COLUMN dressType TEXT DEFAULT ''`,
+      ];
+      let pending = migrations.length;
+      migrations.forEach(stmt => {
+        db.run(stmt, () => { if (--pending === 0) { console.log('✔ Local SQLite ready.'); resolve(db); } });
+      });
     });
   });
 });

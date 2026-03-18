@@ -3,9 +3,12 @@ import { motion } from 'motion/react';
 import { Menu, X, Clock, TrendingUp, Sparkles } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
+import { useAuth } from '../contexts/AuthContext';
 
 export function HomePage() {
+  const { user, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const ctaHref = isAuthenticated ? '/wardrobe' : '/signup';
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -75,14 +78,26 @@ export function HomePage() {
           transition={{ duration: 1, type: "spring", stiffness: 50 }}
           className="relative z-10 text-center px-8 py-16 max-w-5xl rounded-3xl dark:bg-white/5 bg-white/40 backdrop-blur-2xl border dark:border-white/10 border-white/60 shadow-[0_8px_32px_0_rgba(31,38,135,0.1)] dark:shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]"
         >
-          <motion.div
-             initial={{ opacity: 0, y: -20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.2 }}
-             className="mb-4 inline-block px-4 py-1 rounded-full dark:bg-white/10 bg-white/60 border dark:border-white/20 border-black/10 text-sm tracking-wider uppercase backdrop-blur-md dark:text-white text-gray-800"
-          >
-            Elevate Your Style
-          </motion.div>
+          {isAuthenticated && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-4 inline-block px-4 py-1 rounded-full dark:bg-white/10 bg-white/60 border dark:border-white/20 border-black/10 text-sm tracking-wider uppercase backdrop-blur-md dark:text-white text-gray-800"
+            >
+              Welcome, {user?.username}!
+            </motion.div>
+          )}
+          {!isAuthenticated && (
+            <motion.div
+               initial={{ opacity: 0, y: -20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ delay: 0.2 }}
+               className="mb-4 inline-block px-4 py-1 rounded-full dark:bg-white/10 bg-white/60 border dark:border-white/20 border-black/10 text-sm tracking-wider uppercase backdrop-blur-md dark:text-white text-gray-800"
+            >
+              Elevate Your Style
+            </motion.div>
+          )}
           
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -107,11 +122,13 @@ export function HomePage() {
             className="flex flex-col sm:flex-row gap-6 justify-center items-center"
           >
             <a
-              href="/signup"
+              href={ctaHref}
               className="group relative px-8 py-4 rounded-full dark:bg-white bg-gray-900 dark:text-black text-white text-lg font-semibold overflow-hidden transition-all hover:scale-105 shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
             >
               <div className="absolute inset-0 w-0 bg-gradient-to-r dark:from-purple-200 dark:to-pink-200 from-purple-500 to-pink-500 transition-all duration-[300ms] ease-out group-hover:w-full" />
-              <span className="relative z-10 dark:group-hover:text-purple-900 group-hover:text-white transition-colors">Start Curating</span>
+              <span className="relative z-10 dark:group-hover:text-purple-900 group-hover:text-white transition-colors">
+                {isAuthenticated ? 'Go to Wardrobe' : 'Start Curating'}
+              </span>
             </a>
             <a
               href="#perks"

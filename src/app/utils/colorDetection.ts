@@ -59,3 +59,42 @@ export function getImageDominantColor(imageFile: File): Promise<string> {
     reader.readAsDataURL(imageFile);
   });
 }
+
+// Named color definitions — 12 named colors with RGB reference points
+const NAMED_COLORS: { name: string; r: number; g: number; b: number }[] = [
+  { name: 'white',      r: 255, g: 255, b: 255 },
+  { name: 'pink',       r: 255, g: 182, b: 193 },
+  { name: 'red',        r: 200, g:  30, b:  30 },
+  { name: 'orange',     r: 230, g: 120, b:  20 },
+  { name: 'beige',      r: 230, g: 210, b: 185 },
+  { name: 'yellow',     r: 240, g: 220, b:  30 },
+  { name: 'green',      r:  50, g: 160, b:  50 },
+  { name: 'light blue', r: 130, g: 195, b: 235 },
+  { name: 'dark blue',  r:  25, g:  50, b: 160 },
+  { name: 'purple',     r: 140, g:  50, b: 200 },
+  { name: 'brown',      r: 130, g:  75, b:  40 },
+  { name: 'gray',       r: 150, g: 150, b: 150 },
+];
+
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }
+    : { r: 128, g: 128, b: 128 };
+}
+
+export function getClosestColorName(hex: string): string {
+  const { r, g, b } = hexToRgb(hex);
+  let minDist = Infinity;
+  let closest = 'gray';
+  for (const nc of NAMED_COLORS) {
+    const dist = Math.sqrt(
+      (r - nc.r) ** 2 + (g - nc.g) ** 2 + (b - nc.b) ** 2
+    );
+    if (dist < minDist) {
+      minDist = dist;
+      closest = nc.name;
+    }
+  }
+  return closest;
+}

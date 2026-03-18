@@ -1,6 +1,7 @@
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NavbarProps {
   showAuth?: boolean;
@@ -8,6 +9,7 @@ interface NavbarProps {
 
 export function Navbar({ showAuth = false }: NavbarProps) {
   const { theme, toggleTheme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/10 border-b border-white/10">
@@ -22,7 +24,9 @@ export function Navbar({ showAuth = false }: NavbarProps) {
               />
               <div>
                 <div className="font-semibold text-lg">Let's Dress</div>
-                <div className="text-sm opacity-70">Welcome Gorgeous ! ❤️</div>
+                <div className="text-sm opacity-70">
+                  {isAuthenticated && user ? `Welcome, ${user.username}! ❤️` : 'Welcome Gorgeous ! ❤️'}
+                </div>
               </div>
             </div>
           </div>
@@ -30,18 +34,29 @@ export function Navbar({ showAuth = false }: NavbarProps) {
           <div className="flex items-center gap-4">
             {showAuth && (
               <>
-                <Link 
-                  to="/signup"
-                  className="px-6 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-all backdrop-blur-sm"
-                >
-                  Sign Up
-                </Link>
-                <Link 
-                  to="/signin"
-                  className="px-6 py-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
-                >
-                  Sign In
-                </Link>
+                {isAuthenticated ? (
+                  <Link 
+                    to="/wardrobe"
+                    className="px-6 py-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
+                  >
+                    Go to Wardrobe
+                  </Link>
+                ) : (
+                  <>
+                    <Link 
+                      to="/signup"
+                      className="px-6 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-all backdrop-blur-sm"
+                    >
+                      Sign Up
+                    </Link>
+                    <Link 
+                      to="/signin"
+                      className="px-6 py-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
+                    >
+                      Sign In
+                    </Link>
+                  </>
+                )}
               </>
             )}
             <button

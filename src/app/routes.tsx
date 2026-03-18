@@ -21,6 +21,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated ? <>{children}</> : <Navigate to="/signin" replace />;
 }
 
+// Redirect already-authenticated users to wardrobe
+function GuestOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0c29]">
+        <div className="w-8 h-8 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+  
+  return isAuthenticated ? <Navigate to="/wardrobe" replace /> : <>{children}</>;
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -28,11 +43,19 @@ export const router = createBrowserRouter([
   },
   {
     path: '/signup',
-    element: <SignUpPage />,
+    element: (
+      <GuestOnlyRoute>
+        <SignUpPage />
+      </GuestOnlyRoute>
+    ),
   },
   {
     path: '/signin',
-    element: <SignInPage />,
+    element: (
+      <GuestOnlyRoute>
+        <SignInPage />
+      </GuestOnlyRoute>
+    ),
   },
   {
     path: '/wardrobe',

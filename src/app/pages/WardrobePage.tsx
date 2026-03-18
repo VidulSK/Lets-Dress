@@ -1,77 +1,234 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Camera, X } from 'lucide-react';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
-import { getImageDominantColor } from '../utils/colorDetection';
+import { useAuth } from '../contexts/AuthContext';
+import { getImageDominantColor, getClosestColorName, hexToRgb } from '../utils/colorDetection';
 
 interface ClothingItem {
   id: string;
   image: string;
   gender: string;
-  type: 'top' | 'bottom' | 'footwear';
+  type: string;
   color: string;
+  colorName: string;
+  occasions: string;
+  accessoryType: string;
   uploadedAt: number;
 }
 
+const OCCASION_OPTIONS = ['Casual', 'Smart Casual', 'Office wear', 'Semi-Formal (Party wear)', 'Sports wear'];
+
+const MALE_TYPES = ['top', 'bottom', 'footwear', 'accessories'];
+const FEMALE_TYPES = ['top', 'bottom', 'footwear', 'saree', 'frock', 'accessories'];
+
+const MALE_ACCESSORIES = ['Watch', 'Sunglass', 'Chain', 'Ring'];
+const FEMALE_ACCESSORIES = ['Watch', 'Sunglass', 'Necklace', 'Ring', 'Earrings', 'Bangles'];
+
+// Category display labels and order
+const MALE_CATEGORIES: { key: string; label: string }[] = [
+  { key: 'top', label: 'Tops' },
+  { key: 'bottom', label: 'Bottoms' },
+  { key: 'footwear', label: 'Footwears' },
+  { key: 'accessories', label: 'Accessories' },
+];
+const FEMALE_CATEGORIES: { key: string; label: string }[] = [
+  { key: 'top', label: 'Tops' },
+  { key: 'bottom', label: 'Bottoms' },
+  { key: 'footwear', label: 'Footwears' },
+  { key: 'saree', label: 'Sarees' },
+  { key: 'frock', label: 'Frocks' },
+  { key: 'accessories', label: 'Accessories' },
+];
+
+// ── Color Picker Canvas helpers ────────────────────────────────────────────
+function drawColorCanvas(canvas: HTMLCanvasElement, hue: number) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // White → Hue gradient (horizontal)
+  const gradH = ctx.createLinearGradient(0, 0, w, 0);
+  gradH.addColorStop(0, 'white');
+  gradH.addColorStop(1, `hsl(${hue}, 100%, 50%)`);
+  ctx.fillStyle = gradH;
+  ctx.fillRect(0, 0, w, h);
+
+  // Transparent → Black gradient (vertical overlay)
+  const gradV = ctx.createLinearGradient(0, 0, 0, h);
+  gradV.addColorStop(0, 'rgba(0,0,0,0)');
+  gradV.addColorStop(1, 'rgba(0,0,0,1)');
+  ctx.fillStyle = gradV;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function getColorAtPoint(canvas: HTMLCanvasElement, x: number, y: number): string {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '#808080';
+  const px = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+  return `#${px[0].toString(16).padStart(2, '0')}${px[1].toString(16).padStart(2, '0')}${px[2].toString(16).padStart(2, '0')}`;
+}
+
 export function WardrobePage() {
+  const { user } = useAuth();
   const [items, setItems] = useState<ClothingItem[]>([]);
-  
+
   useEffect(() => {
     fetch('/api/wardrobe')
       .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setItems(data);
-      })
+      .then(data => { if (Array.isArray(data)) setItems(data); })
       .catch(console.error);
   }, []);
-  
+
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
-  const [gender, setGender] = useState('male');
-  const [type, setType] = useState<'top' | 'bottom' | 'footwear'>('top');
+  const [type, setType] = useState('top');
+  const [accessoryType, setAccessoryType] = useState('');
+  const [occasions, setOccasions] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [detectedColor, setDetectedColor] = useState<string>('#808080');
   const [currentFile, setCurrentFile] = useState<File | null>(null);
-  
+
+  // Color picker state
+  const [hue, setHue] = useState(0);
+  const [pinPos, setPinPos] = useState({ x: 200, y: 10 }); // default: near top-right = hue color
+  const [pickedColor, setPickedColor] = useState('#808080');
+  const [pickedColorName, setPickedColorName] = useState('gray');
+  const [isDraggingPin, setIsDraggingPin] = useState(false);
+  const [isDraggingHue, setIsDraggingHue] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const colorCanvasRef = useRef<HTMLCanvasElement>(null);
+  const hueBarRef = useRef<HTMLDivElement>(null);
 
+  const userGender = user?.gender || 'male';
+  const typeOptions = userGender === 'female' ? FEMALE_TYPES : MALE_TYPES;
+  const accessoryOptions = userGender === 'female' ? FEMALE_ACCESSORIES : MALE_ACCESSORIES;
+  const categories = userGender === 'female' ? FEMALE_CATEGORIES : MALE_CATEGORIES;
 
+  // Draw HSL canvas whenever hue changes or modal opens
+  useEffect(() => {
+    if (showUploadModal && previewImage && colorCanvasRef.current) {
+      drawColorCanvas(colorCanvasRef.current, hue);
+      // Re-read color at current pin position
+      const col = getColorAtPoint(colorCanvasRef.current, pinPos.x, pinPos.y);
+      setPickedColor(col);
+      setPickedColorName(getClosestColorName(col));
+    }
+  }, [hue, showUploadModal, previewImage]);
 
+  // Initialize color from detected dominant color
   const handleFileSelect = async (file: File) => {
     setCurrentFile(file);
     const reader = new FileReader();
     reader.onload = async (e) => {
       const imageUrl = e.target?.result as string;
       setPreviewImage(imageUrl);
-      
-      // Detect color
-      const color = await getImageDominantColor(file);
-      setDetectedColor(color);
+      const col = await getImageDominantColor(file);
+      setPickedColor(col);
+      setPickedColorName(getClosestColorName(col));
+      // Set hue from dominant color
+      const { r, g, b } = hexToRgb(col);
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0;
+      if (max !== min) {
+        const d = max - min;
+        if (max === r) h = ((g - b) / d % 6) * 60;
+        else if (max === g) h = ((b - r) / d + 2) * 60;
+        else h = ((r - g) / d + 4) * 60;
+        if (h < 0) h += 360;
+      }
+      setHue(Math.round(h));
+      setPinPos({ x: 200, y: 10 });
     };
     reader.readAsDataURL(file);
+  };
+
+  // Pin drag handlers on the color canvas
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDraggingPin(true);
+    updatePinFromEvent(e.nativeEvent, colorCanvasRef.current!);
+  };
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDraggingPin) return;
+    updatePinFromEvent(e.nativeEvent, colorCanvasRef.current!);
+  };
+  const handleCanvasMouseUp = () => setIsDraggingPin(false);
+  const handleCanvasTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDraggingPin(true);
+    const t = e.touches[0];
+    updatePinFromCoords(t.clientX, t.clientY, colorCanvasRef.current!);
+  };
+  const handleCanvasTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDraggingPin) return;
+    const t = e.touches[0];
+    updatePinFromCoords(t.clientX, t.clientY, colorCanvasRef.current!);
+  };
+
+  const updatePinFromEvent = (e: MouseEvent, canvas: HTMLCanvasElement) => {
+    updatePinFromCoords(e.clientX, e.clientY, canvas);
+  };
+
+  const updatePinFromCoords = (clientX: number, clientY: number, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(canvas.width, clientX - rect.left));
+    const y = Math.max(0, Math.min(canvas.height, clientY - rect.top));
+    setPinPos({ x, y });
+    const col = getColorAtPoint(canvas, x, y);
+    setPickedColor(col);
+    setPickedColorName(getClosestColorName(col));
+  };
+
+  // Hue slider drag
+  const handleHueMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDraggingHue(true);
+    updateHueFromEvent(e.nativeEvent);
+  };
+  const handleHueMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingHue || !hueBarRef.current) return;
+    updateHueFromEvent(e);
+  }, [isDraggingHue]);
+  const handleHueMouseUp = useCallback(() => setIsDraggingHue(false), []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleHueMouseMove);
+    window.addEventListener('mouseup', handleHueMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleHueMouseMove);
+      window.removeEventListener('mouseup', handleHueMouseUp);
+    };
+  }, [handleHueMouseMove, handleHueMouseUp]);
+
+  const updateHueFromEvent = (e: MouseEvent) => {
+    if (!hueBarRef.current) return;
+    const rect = hueBarRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    setHue(Math.round((x / rect.width) * 360));
   };
 
   const handleUploadClick = () => {
     setShowUploadModal(true);
     setPreviewImage(null);
-    setDetectedColor('#808080');
+    setPickedColor('#808080');
+    setPickedColorName('gray');
+    setType('top');
+    setAccessoryType('');
+    setOccasions([]);
+    setHue(0);
+    setPinPos({ x: 200, y: 10 });
   };
 
   const handleCameraClick = async () => {
     setShowCameraModal(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (error) {
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch {
       alert('Permission denied. Please allow camera access to use this feature.');
       setShowCameraModal(false);
     }
@@ -89,18 +246,8 @@ export function WardrobePage() {
         canvas.toBlob(async (blob) => {
           if (blob) {
             const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
-            setCurrentFile(file);
-            const imageUrl = canvas.toDataURL('image/jpeg');
-            setPreviewImage(imageUrl);
-            
-            // Detect color
-            const color = await getImageDominantColor(file);
-            setDetectedColor(color);
-            
-            // Stop camera
-            if (streamRef.current) {
-              streamRef.current.getTracks().forEach(track => track.stop());
-            }
+            await handleFileSelect(file);
+            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
             setShowCameraModal(false);
             setShowUploadModal(true);
           }
@@ -110,66 +257,65 @@ export function WardrobePage() {
   };
 
   const closeCameraModal = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
     setShowCameraModal(false);
   };
 
+  const toggleOccasion = (occ: string) => {
+    setOccasions(prev => prev.includes(occ) ? prev.filter(o => o !== occ) : [...prev, occ]);
+  };
+
   const handleSaveItem = async () => {
-    if (previewImage) {
-      const id = Date.now().toString();
-      const uploadedAt = Date.now();
+    if (!previewImage) return;
+    const id = Date.now().toString();
+    const uploadedAt = Date.now();
+    const formData = new FormData();
+    formData.append('id', id);
+    formData.append('gender', userGender);
+    formData.append('type', type);
+    formData.append('color', pickedColor);
+    formData.append('colorName', pickedColorName);
+    formData.append('occasions', occasions.join(','));
+    formData.append('accessoryType', type === 'accessories' ? accessoryType : '');
+    formData.append('uploadedAt', uploadedAt.toString());
+    if (currentFile) formData.append('image', currentFile);
+    else formData.append('image', previewImage);
 
-      const formData = new FormData();
-      formData.append('id', id);
-      formData.append('gender', gender);
-      formData.append('type', type);
-      formData.append('color', detectedColor);
-      formData.append('uploadedAt', uploadedAt.toString());
-      
-      if (currentFile) {
-        formData.append('image', currentFile);
+    try {
+      const res = await fetch('/api/wardrobe', { method: 'POST', body: formData });
+      if (res.ok) {
+        const savedItem = await res.json();
+        setItems(prev => [savedItem, ...prev]);
+        setShowUploadModal(false);
+        setPreviewImage(null);
+        setCurrentFile(null);
       } else {
-        formData.append('image', previewImage);
+        alert('Failed to save item');
       }
-
-      try {
-        const res = await fetch('/api/wardrobe', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (res.ok) {
-          const savedItem = await res.json();
-          setItems(prev => [savedItem, ...prev]);
-          setShowUploadModal(false);
-          setPreviewImage(null);
-          setCurrentFile(null);
-        } else {
-          alert('Failed to save item');
-        }
-      } catch (error) {
-        console.error('Upload Error:', error);
-      }
+    } catch (error) {
+      console.error('Upload Error:', error);
     }
   };
 
   const handleDeleteItem = async (id: string) => {
     try {
       const res = await fetch(`/api/wardrobe/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setItems(prev => prev.filter(item => item.id !== id));
-      }
+      if (res.ok) setItems(prev => prev.filter(item => item.id !== id));
     } catch (error) {
       console.error('Delete Error:', error);
     }
   };
 
+  // Group items by type
+  const grouped = categories.reduce((acc, cat) => {
+    acc[cat.key] = items.filter(i => i.type === cat.key);
+    return acc;
+  }, {} as Record<string, ClothingItem[]>);
+
   return (
     <div className="min-h-screen flex flex-col">
       <AppNavbar />
-      
+
       <div className="flex-1 px-6 py-24">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -177,77 +323,75 @@ export function WardrobePage() {
               <h1 className="text-4xl mb-2">My Wardrobe</h1>
               <p className="opacity-80">Manage your clothing collection</p>
             </div>
-            
             <div className="flex gap-4">
               <button
                 onClick={handleUploadClick}
                 className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
               >
-                <Upload className="w-5 h-5" />
-                Upload
+                <Upload className="w-5 h-5" />Upload
               </button>
               <button
                 onClick={handleCameraClick}
                 className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/20 hover:bg-white/30 transition-all backdrop-blur-sm"
               >
-                <Camera className="w-5 h-5" />
-                Camera
+                <Camera className="w-5 h-5" />Camera
               </button>
             </div>
           </div>
 
-          {/* Wardrobe Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <AnimatePresence>
-              {items.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="relative group"
-                >
-                  <div className="aspect-square rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20">
-                    <img
-                      src={item.image}
-                      alt={`${item.type} item`}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  </div>
-                  
-                  <div className="absolute top-3 right-3 flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
-                      style={{ backgroundColor: item.color }}
-                      title={`Dominant color: ${item.color}`}
-                    />
-                    <button
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="p-2 rounded-full bg-red-500/80 hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="mt-2 px-2">
-                    <div className="text-sm opacity-80 capitalize">{item.type}</div>
-                    <div className="text-xs opacity-60 capitalize">{item.gender}</div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-
-          {items.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-20"
-            >
+          {/* Categorised Wardrobe */}
+          {items.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
               <p className="text-xl opacity-60 mb-4">Your wardrobe is empty</p>
               <p className="opacity-40">Upload or capture your first item to get started</p>
             </motion.div>
+          ) : (
+            categories.map((cat, catIdx) => {
+              const catItems = grouped[cat.key] || [];
+              if (catItems.length === 0) return null;
+              return (
+                <div key={cat.key}>
+                  {catIdx > 0 && <hr className="border-white/15 my-6" />}
+                  <h2 className="text-xl font-semibold mb-4 opacity-90">{cat.label}</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <AnimatePresence>
+                      {catItems.map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          className="relative group"
+                        >
+                          <div className="aspect-square rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20">
+                            <img src={item.image} alt={`${item.type} item`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                          </div>
+                          <div className="absolute top-3 right-3 flex items-center gap-2">
+                            <div
+                              className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
+                              style={{ backgroundColor: item.color }}
+                              title={item.colorName || item.color}
+                            />
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="p-2 rounded-full bg-red-500/80 hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="mt-2 px-2">
+                            <div className="text-sm opacity-80 capitalize">{item.type}</div>
+                            {item.colorName && <div className="text-xs opacity-60 capitalize">{item.colorName}</div>}
+                            {item.accessoryType && <div className="text-xs opacity-50">{item.accessoryType}</div>}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -256,25 +400,18 @@ export function WardrobePage() {
       <AnimatePresence>
         {showUploadModal && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
             onClick={() => setShowUploadModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20"
+              className="w-full max-w-md p-6 my-4 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20"
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl">Add Item</h2>
-                <button
-                  onClick={() => setShowUploadModal(false)}
-                  className="p-2 rounded-full hover:bg-white/20 transition-all"
-                >
+                <button onClick={() => setShowUploadModal(false)} className="p-2 rounded-full hover:bg-white/20 transition-all">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -286,58 +423,114 @@ export function WardrobePage() {
                 >
                   <Upload className="w-12 h-12 mx-auto mb-4 opacity-60" />
                   <p className="opacity-80">Click to upload image</p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
-                    className="hidden"
-                  />
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])} className="hidden" />
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Preview */}
                   <div className="aspect-square rounded-xl overflow-hidden bg-white/5">
-                    <img
-                      src={previewImage}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm opacity-80">Detected color:</span>
+                  {/* Color Picker */}
+                  <div>
+                    <label className="block mb-2 text-sm opacity-80">Pick Color</label>
+                    {/* HSL square */}
+                    <div className="relative mb-2 rounded-lg overflow-hidden" style={{ height: 140 }}>
+                      <canvas
+                        ref={colorCanvasRef}
+                        width={400}
+                        height={140}
+                        className="w-full h-full cursor-crosshair select-none"
+                        onMouseDown={handleCanvasMouseDown}
+                        onMouseMove={handleCanvasMouseMove}
+                        onMouseUp={handleCanvasMouseUp}
+                        onMouseLeave={handleCanvasMouseUp}
+                        onTouchStart={handleCanvasTouchStart}
+                        onTouchMove={handleCanvasTouchMove}
+                        onTouchEnd={() => setIsDraggingPin(false)}
+                      />
+                      {/* Movable pin */}
+                      <div
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: `${(pinPos.x / 400) * 100}%`,
+                          top: `${(pinPos.y / 140) * 100}%`,
+                          transform: 'translate(-50%, -50%)',
+                        }}
+                      >
+                        <div className="w-5 h-5 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: pickedColor }} />
+                      </div>
+                    </div>
+                    {/* Hue slider */}
                     <div
-                      className="w-10 h-10 rounded-full border-2 border-white"
-                      style={{ backgroundColor: detectedColor }}
-                    />
-                    <span className="text-sm opacity-60">{detectedColor}</span>
-                  </div>
-
-                  <div>
-                    <label className="block mb-2 text-sm opacity-80">Gender</label>
-                    <select
-                      value={gender}
-                      onChange={(e) => setGender(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none"
+                      ref={hueBarRef}
+                      className="relative h-4 rounded-full cursor-pointer mb-2"
+                      style={{ background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)' }}
+                      onMouseDown={handleHueMouseDown}
                     >
-                      <option value="" className="bg-[#D2C1B6] text-gray-400">Select gender</option>
-                      <option value="male" className="bg-[#D2C1B6] text-white">Male</option>
-                      <option value="female" className="bg-[#D2C1B6] text-white">Female</option>
-                      <option value="other" className="bg-[#D2C1B6] text-white">Other</option>
-                    </select>
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-md pointer-events-none"
+                        style={{ left: `${(hue / 360) * 100}%`, transform: 'translate(-50%, -50%)', backgroundColor: `hsl(${hue},100%,50%)` }}
+                      />
+                    </div>
+                    {/* Color result */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg flex-shrink-0" style={{ backgroundColor: pickedColor }} />
+                      <div>
+                        <div className="text-sm font-semibold capitalize">{pickedColorName}</div>
+                        <div className="text-xs opacity-60">{pickedColor}</div>
+                      </div>
+                    </div>
                   </div>
 
+                  {/* Dress Type */}
                   <div>
-                    <label className="block mb-2 text-sm opacity-80">Type</label>
+                    <label className="block mb-2 text-sm opacity-80">Dress Type</label>
                     <select
                       value={type}
-                      onChange={(e) => setType(e.target.value as 'top' | 'bottom' | 'footwear')}
-                      className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none"
+                      onChange={(e) => { setType(e.target.value); setAccessoryType(''); }}
+                      className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none capitalize"
                     >
-                      <option value="top" className="bg-[#D2C1B6] text-white">Top</option>
-                      <option value="bottom" className="bg-[#D2C1B6] text-white">Bottom</option>
-                      <option value="footwear" className="bg-[#D2C1B6] text-white">Footwear</option>
+                      {typeOptions.map(t => (
+                        <option key={t} value={t} className="bg-[#2a1a3e] text-white capitalize">{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                      ))}
                     </select>
+                  </div>
+
+                  {/* Accessory sub-dropdown */}
+                  {type === 'accessories' && (
+                    <div>
+                      <label className="block mb-2 text-sm opacity-80">Accessory Type</label>
+                      <select
+                        value={accessoryType}
+                        onChange={(e) => setAccessoryType(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none"
+                      >
+                        <option value="" className="bg-[#2a1a3e] text-gray-400">Select accessory type</option>
+                        {accessoryOptions.map(a => (
+                          <option key={a} value={a} className="bg-[#2a1a3e] text-white">{a}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Occasions */}
+                  <div>
+                    <label className="block mb-2 text-sm opacity-80">Occasions (select all that apply)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {OCCASION_OPTIONS.map(occ => (
+                        <label key={occ} className="flex items-center gap-2 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            checked={occasions.includes(occ)}
+                            onChange={() => toggleOccasion(occ)}
+                            className="w-4 h-4 accent-purple-500 cursor-pointer"
+                          />
+                          <span className="text-sm group-hover:opacity-100 opacity-80">{occ}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
 
                   <button
@@ -357,37 +550,18 @@ export function WardrobePage() {
       <AnimatePresence>
         {showCameraModal && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
           >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="w-full max-w-2xl"
-            >
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="w-full max-w-2xl">
               <div className="relative rounded-2xl overflow-hidden">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full"
-                />
+                <video ref={videoRef} autoPlay playsInline className="w-full" />
                 <canvas ref={canvasRef} className="hidden" />
-                
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4">
-                  <button
-                    onClick={capturePhoto}
-                    className="px-8 py-4 rounded-full bg-white text-black hover:bg-gray-200 transition-all font-semibold"
-                  >
+                  <button onClick={capturePhoto} className="px-8 py-4 rounded-full bg-white text-black hover:bg-gray-200 transition-all font-semibold">
                     Capture Photo
                   </button>
-                  <button
-                    onClick={closeCameraModal}
-                    className="px-8 py-4 rounded-full bg-red-500 hover:bg-red-600 transition-all"
-                  >
+                  <button onClick={closeCameraModal} className="px-8 py-4 rounded-full bg-red-500 hover:bg-red-600 transition-all">
                     Cancel
                   </button>
                 </div>

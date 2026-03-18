@@ -117,12 +117,19 @@ app.put('/api/auth/theme', requireAuth, (req, res) => {
 app.get('/api/wardrobe', requireAuth, (req, res) => {
   db.all(`SELECT * FROM wardrobe_items WHERE userId = ? ORDER BY uploadedAt DESC`, [req.userId], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
+    // Normalize column names for PG (quoted) vs SQLite
+    const normalized = (rows || []).map(r => ({
+      ...r,
+      colorName: r.colorName || r['colorName'] || '',
+      accessoryType: r.accessoryType || r['accessoryType'] || '',
+      occasions: r.occasions || '',
+    }));
+    res.json(normalized);
   });
 });
 
 app.post('/api/wardrobe', requireAuth, upload.single('image'), (req, res) => {
-  const { id, gender, type, color, uploadedAt } = req.body;
+  const { id, gender, type, color, colorName, occasions, accessoryType, uploadedAt } = req.body;
   const imagePath = req.file ? '/uploads/' + req.file.filename : req.body.image;
 
   let finalImagePath = imagePath;
@@ -139,12 +146,12 @@ app.post('/api/wardrobe', requireAuth, upload.single('image'), (req, res) => {
 
   // Use db.run directly instead of prepare() for cross-DB compatibility
   db.run(
-    `INSERT INTO wardrobe_items (id, userId, image, gender, type, color, uploadedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [id, req.userId, finalImagePath, gender, type, color, uploadedAt],
+    `INSERT INTO wardrobe_items (id, userId, image, gender, type, color, colorName, occasions, accessoryType, uploadedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, req.userId, finalImagePath, gender, type, color, colorName || '', occasions || '', accessoryType || '', uploadedAt],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.status(201).json({
-        id, userId: req.userId, image: finalImagePath, gender, type, color, uploadedAt
+        id, userId: req.userId, image: finalImagePath, gender, type, color, colorName: colorName || '', occasions: occasions || '', accessoryType: accessoryType || '', uploadedAt
       });
     }
   );
@@ -182,11 +189,11 @@ app.get('/api/outfits', requireAuth, (req, res) => {
       }, {});
 
       const formattedOutfits = rows.map(r => ({
-        day: r.day,
+        date: r.date,
         outfit: {
-          top: itemsMap[r.topItem] || null,
-          bottom: itemsMap[r.bottomItem] || null,
-          footwear: itemsMap[r.footwearItem] || null
+          top: itemsMap[r.topItem || r['topItem']] || null,
+          bottom: itemsMap[r.bottomItem || r['bottomItem']] || null,
+          footwear: itemsMap[r.footwearItem || r['footwearItem']] || null
         }
       }));
       res.json(formattedOutfits);
@@ -195,11 +202,11 @@ app.get('/api/outfits', requireAuth, (req, res) => {
 });
 
 app.post('/api/outfits', requireAuth, (req, res) => {
-  const { day, outfit } = req.body;
-  if (!day) return res.status(400).json({ error: 'Day is required' });
+  const { date, outfit } = req.body;
+  if (!date) return res.status(400).json({ error: 'Date is required' });
 
   if (!outfit) {
-    db.run(`DELETE FROM weekly_outfits WHERE userId = ? AND day = ?`, [req.userId, day], (err) => {
+    db.run(`DELETE FROM weekly_outfits WHERE userId = ? AND date = ?`, [req.userId, date], (err) => {
       if (err) return res.status(500).json({ error: err.message });
       return res.json({ success: true });
     });
@@ -211,11 +218,11 @@ app.post('/api/outfits', requireAuth, (req, res) => {
   const footwearItem = outfit.footwear?.id || null;
 
   db.run(
-    `INSERT INTO weekly_outfits (userId, day, topItem, bottomItem, footwearItem)
+    `INSERT INTO weekly_outfits (userId, date, topItem, bottomItem, footwearItem)
      VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(userId, day)
+     ON CONFLICT(userId, date)
      DO UPDATE SET topItem=excluded.topItem, bottomItem=excluded.bottomItem, footwearItem=excluded.footwearItem`,
-    [req.userId, day, topItem, bottomItem, footwearItem],
+    [req.userId, date, topItem, bottomItem, footwearItem],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ success: true });
@@ -225,17 +232,18 @@ app.post('/api/outfits', requireAuth, (req, res) => {
 
 // --- EVENTS ROUTES ---
 app.get('/api/events', requireAuth, (req, res) => {
-  db.all(`SELECT date, title FROM events WHERE userId = ?`, [req.userId], (err, rows) => {
+  db.all(`SELECT date, title, dressType FROM events WHERE userId = ?`, [req.userId], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
+    const normalized = (rows || []).map(r => ({ ...r, dressType: r.dressType || r['dressType'] || '' }));
+    res.json(normalized);
   });
 });
 
 app.post('/api/events', requireAuth, (req, res) => {
-  const { date, title } = req.body;
-  db.run(`INSERT INTO events (userId, date, title) VALUES (?, ?, ?)`, [req.userId, date, title], function (err) {
+  const { date, title, dressType } = req.body;
+  db.run(`INSERT INTO events (userId, date, title, dressType) VALUES (?, ?, ?, ?)`, [req.userId, date, title, dressType || ''], function (err) {
     if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ id: this.lastID, date, title });
+    res.status(201).json({ id: this.lastID, date, title, dressType: dressType || '' });
   });
 });
 
