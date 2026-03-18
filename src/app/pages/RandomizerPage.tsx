@@ -158,8 +158,44 @@ export function RandomizerPage() {
           eventDressType: ev?.dressType,
         };
       }));
+
+      // --- Restore Ticked Day and Outfit ---
+      if (user?.id) {
+        let defaultTicked = '';
+        const savedTicked = localStorage.getItem(`tickedDay_${user.id}`);
+        // Ensure the saved day is within our current 7-day strip and not past
+        if (savedTicked && base.some(d => d.dateStr === savedTicked && !d.isPast)) {
+          defaultTicked = savedTicked;
+        } else {
+          // Default to today if valid
+          const today = formatDateStr(new Date());
+          const todayEntry = base.find(d => d.dateStr === today);
+          if (todayEntry && !todayEntry.isPast) defaultTicked = today;
+        }
+
+        if (defaultTicked) {
+          setTickedDays(new Set([defaultTicked]));
+          if (outfitMap[defaultTicked]) {
+            setCurrentOutfit(outfitMap[defaultTicked]);
+          } else {
+            setCurrentOutfit({ top: null, bottom: null, footwear: null });
+          }
+        }
+      }
     });
   }, [user]);
+
+  // Save the currently ticked day to localStorage whenever it changes
+  useEffect(() => {
+    if (user?.id) {
+      if (tickedDays.size > 0) {
+        const arr = Array.from(tickedDays);
+        localStorage.setItem(`tickedDay_${user.id}`, arr[0]);
+      } else {
+        localStorage.removeItem(`tickedDay_${user.id}`);
+      }
+    }
+  }, [tickedDays, user?.id]);
 
   const generateOutfit = () => {
     if (tickedDays.size === 0) {
@@ -261,6 +297,9 @@ export function RandomizerPage() {
       });
       if (res.ok) {
         setDayEntries(prev => prev.map(de => de.dateStr === dateStr ? { ...de, outfit: null } : de));
+        if (tickedDays.has(dateStr)) {
+          setCurrentOutfit({ top: null, bottom: null, footwear: null });
+        }
       }
     } catch (e) { console.error(e); }
   };
@@ -354,11 +393,13 @@ export function RandomizerPage() {
                 // Radio-button tick: selecting a day deselects any other ticked day
                 const handleTick = () => {
                   if (de.isPast) return;
-                  setTickedDays(prev => {
-                    // If already ticked, untick it; otherwise select only this day
-                    if (prev.has(de.dateStr)) return new Set();
-                    return new Set([de.dateStr]);
-                  });
+                  if (tickedDays.has(de.dateStr)) {
+                    setTickedDays(new Set());
+                    setCurrentOutfit({ top: null, bottom: null, footwear: null });
+                  } else {
+                    setTickedDays(new Set([de.dateStr]));
+                    setCurrentOutfit(de.outfit || { top: null, bottom: null, footwear: null });
+                  }
                 };
 
                 return (

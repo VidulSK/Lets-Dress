@@ -110,16 +110,44 @@ sqliteDb = await new Promise((resolve) => {
   const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error("SQLite Load Error:", err.message);
     db.exec(SCHEMA_SQLITE, () => {
-      // Migrate existing tables: add new columns if missing
-      const migrations = [
-        `ALTER TABLE wardrobe_items ADD COLUMN colorName TEXT DEFAULT ''`,
-        `ALTER TABLE wardrobe_items ADD COLUMN occasions TEXT DEFAULT ''`,
-        `ALTER TABLE wardrobe_items ADD COLUMN accessoryType TEXT DEFAULT ''`,
-        `ALTER TABLE events ADD COLUMN dressType TEXT DEFAULT ''`,
-      ];
-      let pending = migrations.length;
-      migrations.forEach(stmt => {
-        db.run(stmt, () => { if (--pending === 0) { console.log('✔ Local SQLite ready.'); resolve(db); } });
+      const runMigrations = () => {
+        // Migrate existing tables: add new columns if missing
+        const migrations = [
+          `ALTER TABLE wardrobe_items ADD COLUMN colorName TEXT DEFAULT ''`,
+          `ALTER TABLE wardrobe_items ADD COLUMN occasions TEXT DEFAULT ''`,
+          `ALTER TABLE wardrobe_items ADD COLUMN accessoryType TEXT DEFAULT ''`,
+          `ALTER TABLE events ADD COLUMN dressType TEXT DEFAULT ''`,
+        ];
+        let pending = migrations.length;
+        if (pending === 0) {
+           console.log('✔ Local SQLite ready.');
+           resolve(db);
+        } else {
+           migrations.forEach(stmt => {
+             db.run(stmt, () => { if (--pending === 0) { console.log('✔ Local SQLite ready.'); resolve(db); } });
+           });
+        }
+      };
+
+      db.all("PRAGMA table_info(weekly_outfits)", (err, rows) => {
+        const hasDay = rows && rows.some(r => r.name === 'day');
+        if (hasDay) {
+          db.run('DROP TABLE weekly_outfits', () => {
+            db.run(`
+              CREATE TABLE IF NOT EXISTS weekly_outfits (
+                userId INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                topItem TEXT,
+                bottomItem TEXT,
+                footwearItem TEXT,
+                PRIMARY KEY(userId, date),
+                FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+              )
+            `, runMigrations);
+          });
+        } else {
+          runMigrations();
+        }
       });
     });
   });
@@ -136,6 +164,13 @@ if (process.env.DATABASE_URL) {
     
     // Test connection and init schema
     const client = await pgPool.connect();
+    
+    // Check if old weekly_outfits using 'day' exists, and drop it to allow recreation
+    const res = await client.query(`SELECT column_name FROM information_schema.columns WHERE table_name='weekly_outfits' AND column_name='day'`);
+    if (res.rows.length > 0) {
+      await client.query(`DROP TABLE weekly_outfits`);
+    }
+
     for (const stmt of SCHEMA_PG.split(';').map(s => s.trim()).filter(Boolean)) {
       await client.query(stmt);
     }
