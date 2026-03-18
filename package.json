@@ -4,12 +4,12 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
     "start": "node server/index.js",
+    "build": "npm install && cd client && npm install && npm run build",
     "dev:frontend": "vite",
-    "dev:backend": "node server/index.js",
+    "dev:backend": "nodemon server/index.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
-  },
+},
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
