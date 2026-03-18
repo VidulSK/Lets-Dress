@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "start": "node server/index.js",
-    "build": "npm install && cd client && npm install && npm run build",
+    "build": "npm install && vite build",
     "dev:frontend": "vite",
-    "dev:backend": "nodemon server/index.js",
+    "dev:backend": "node server/index.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+  },
+"engines": {
+  "node": ">=20.0.0"
 },
   "dependencies": {
     "@emotion/react": "11.14.0",
