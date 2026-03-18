@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shuffle, Save, Trash2 } from 'lucide-react';
+import { Shuffle, Trash2, Check } from 'lucide-react';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -78,6 +78,22 @@ function pickRandom<T>(arr: T[]): T | null {
 }
 
 // Accessory reminder message
+const IRREGULAR_PLURALS: Record<string, string> = {
+  watch: 'watches',
+  sunglass: 'sunglasses',
+  sunglasses: 'sunglasses',
+  chain: 'chains',
+};
+
+function pluralise(word: string, count: number): string {
+  if (count === 1) return word;
+  const lower = word.toLowerCase();
+  if (IRREGULAR_PLURALS[lower]) return IRREGULAR_PLURALS[lower];
+  if (lower.endsWith('s') || lower.endsWith('sh') || lower.endsWith('ch') || lower.endsWith('x') || lower.endsWith('z'))
+    return lower + 'es';
+  return lower + 's';
+}
+
 function buildAccessoryReminder(accessories: ClothingItem[]): string | null {
   if (!accessories.length) return null;
   const counts: Record<string, number> = {};
@@ -85,13 +101,9 @@ function buildAccessoryReminder(accessories: ClothingItem[]): string | null {
     const t = a.accessoryType || 'accessory';
     counts[t] = (counts[t] || 0) + 1;
   });
-  const parts = Object.entries(counts).map(([type, count]) => {
-    const label = type.toLowerCase();
-    const plural = count > 1
-      ? (label.endsWith('s') ? label : label + 's')
-      : label;
-    return `${count} ${count > 1 ? plural : label}`;
-  });
+  const parts = Object.entries(counts).map(([type, count]) =>
+    `${count} ${pluralise(type, count)}`
+  );
   if (!parts.length) return null;
   const list = parts.length > 1
     ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1]
@@ -106,8 +118,10 @@ export function RandomizerPage() {
   const [dayEntries, setDayEntries] = useState<DayEntry[]>([]);
   const [currentOutfit, setCurrentOutfit] = useState<Outfit>({ top: null, bottom: null, footwear: null });
   const [isSpinning, setIsSpinning] = useState(false);
-  const [savedDayDate, setSavedDayDate] = useState<string | null>(null);
+  const [tickedDays, setTickedDays] = useState<Set<string>>(new Set());
   const [history, setHistory] = useState<{ top: string[]; bottom: string[]; footwear: string[] }>({ top: [], bottom: [], footwear: [] });
+  const [showReminder, setShowReminder] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
 
   const userGender = user?.gender || 'male';
   const isFemale = userGender === 'female';
@@ -115,62 +129,57 @@ export function RandomizerPage() {
   // Determine if the current outfit has a saree or frock top (female only)
   const isFullDress = isFemale && (currentOutfit.top?.type === 'saree' || currentOutfit.top?.type === 'frock');
 
-  useEffect(() => {
-    fetch('/api/wardrobe')
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setItems(data); })
-      .catch(console.error);
-
-    fetch('/api/events')
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setEvents(data); })
-      .catch(console.error);
-
-    fetch('/api/outfits')
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setDayEntries(prev =>
-            prev.map(de => {
-              const found = data.find((d: any) => d.date === de.dateStr);
-              return found ? { ...de, outfit: found.outfit } : de;
-            })
-          );
-        }
-      })
-      .catch(console.error);
-  }, [user]);
-
-  // Build 7-day strip, enriched with events
+  // Single load: fetch everything in parallel then build the 7-day strip once
+  // This avoids the race condition where build7Days() would reset saved outfits
   useEffect(() => {
     const base = build7Days();
-    setDayEntries(base.map(d => ({
-      ...d,
-      outfit: null,
-      eventTitle: undefined,
-      eventDressType: undefined,
-    })));
-  }, []);
 
-  // Enrich day entries with event data whenever events load
-  useEffect(() => {
-    setDayEntries(prev => prev.map(de => {
-      const ev = events.find(e => e.date === de.dateStr);
-      return ev ? { ...de, eventTitle: ev.title, eventDressType: ev.dressType } : { ...de, eventTitle: undefined, eventDressType: undefined };
-    }));
-  }, [events]);
+    Promise.all([
+      fetch('/api/wardrobe').then(r => r.json()).catch(() => []),
+      fetch('/api/events').then(r => r.json()).catch(() => []),
+      fetch('/api/outfits').then(r => r.json()).catch(() => []),
+    ]).then(([wardrobeData, eventsData, outfitsData]) => {
+      if (Array.isArray(wardrobeData)) setItems(wardrobeData);
 
-  // Re-enrich with saved outfits when both have loaded
-  // (handled by fetch above updating dayEntries)
+      const evList: { date: string; title: string; dressType: string }[] = Array.isArray(eventsData) ? eventsData : [];
+      setEvents(evList);
 
-  const generateOutfit = (targetDate?: string) => {
+      const outfitMap: Record<string, Outfit> = {};
+      if (Array.isArray(outfitsData)) {
+        outfitsData.forEach((d: any) => { outfitMap[d.date] = d.outfit; });
+      }
+
+      setDayEntries(base.map(d => {
+        const ev = evList.find(e => e.date === d.dateStr);
+        return {
+          ...d,
+          outfit: outfitMap[d.dateStr] ?? null,
+          eventTitle: ev?.title,
+          eventDressType: ev?.dressType,
+        };
+      }));
+    });
+  }, [user]);
+
+  const generateOutfit = () => {
+    if (tickedDays.size === 0) {
+      alert('Please tick a day in the Weekly Planner before generating an outfit!');
+      return;
+    }
     if (items.length === 0) {
       alert('Please add some items to your wardrobe first!');
       return;
     }
-    setIsSpinning(true);
 
-    const eventForDay = targetDate ? events.find(e => e.date === targetDate) : null;
+    // Snapshot the ticked days NOW before any async work
+    const targetDates = [...tickedDays];
+
+    setIsSpinning(true);
+    setShowReminder(false);
+
+    // Use the first ticked day's event (if any) to guide outfit generation
+    const firstTickedDate = targetDates[0];
+    const eventForDay = events.find(e => e.date === firstTickedDate) || null;
     const requiredDressType = eventForDay?.dressType || null;
 
     // Female: include sarees & frocks as "tops"
@@ -180,18 +189,16 @@ export function RandomizerPage() {
     const filterByOccasion = (itms: ClothingItem[]) => {
       if (!requiredDressType) return itms;
       return itms.filter(i => {
-        if (!i.occasions) return true; // no occasion tagged — allow
+        if (!i.occasions) return true;
         return i.occasions.split(',').some(o => o.trim() === requiredDressType);
       });
     };
 
     let tops = filterByOccasion(items.filter(i => topTypes.includes(i.type)));
-    // Avoid recent tops
     const availTops = tops.filter(i => !history.top.includes(i.id));
     const topPool = availTops.length > 0 ? availTops : tops;
     const newTop = pickRandom(topPool);
 
-    // Bottom: match by color if combo available
     const isFullDressTop = newTop && (newTop.type === 'saree' || newTop.type === 'frock');
     let newBottom: ClothingItem | null = null;
     if (!isFullDressTop) {
@@ -218,29 +225,31 @@ export function RandomizerPage() {
       footwear: [newFootwear?.id, ...prev.footwear].filter(Boolean).slice(0, 2) as string[],
     }));
 
-    setTimeout(() => {
-      setCurrentOutfit({ top: newTop, bottom: newBottom, footwear: newFootwear });
-      setIsSpinning(false);
-    }, 1500);
-  };
+    const newOutfit: Outfit = { top: newTop, bottom: newBottom, footwear: newFootwear };
 
-  const saveToDay = async (dateStr: string) => {
-    if (!currentOutfit.top && !currentOutfit.bottom && !currentOutfit.footwear) {
-      alert('Please generate an outfit first!');
-      return;
-    }
-    try {
-      const res = await fetch('/api/outfits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: dateStr, outfit: currentOutfit }),
+    // Run animation, then update boxes immediately (optimistic) and save to server
+    setTimeout(() => {
+      setCurrentOutfit(newOutfit);
+      setIsSpinning(false);
+      setShowReminder(true);
+      setHasGenerated(true);
+
+      // Optimistic update — show previews in boxes right away, don't wait for server
+      setDayEntries(prev =>
+        prev.map(de =>
+          targetDates.includes(de.dateStr) ? { ...de, outfit: newOutfit } : de
+        )
+      );
+
+      // Persist to server in the background
+      targetDates.forEach(dateStr => {
+        fetch('/api/outfits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: dateStr, outfit: newOutfit }),
+        }).catch(console.error);
       });
-      if (res.ok) {
-        setDayEntries(prev => prev.map(de => de.dateStr === dateStr ? { ...de, outfit: currentOutfit } : de));
-        setSavedDayDate(dateStr);
-        setTimeout(() => setSavedDayDate(null), 2000);
-      }
-    } catch (e) { console.error(e); }
+    }, 1500);
   };
 
   const clearDay = async (dateStr: string) => {
@@ -306,10 +315,13 @@ export function RandomizerPage() {
               ))}
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-3">
+              {tickedDays.size === 0 && (
+                <p className="text-sm opacity-50">Tick a day below to enable the randomizer</p>
+              )}
               <button
                 onClick={() => generateOutfit()}
-                disabled={isSpinning}
+                disabled={isSpinning || tickedDays.size === 0}
                 className="flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Shuffle className={`w-6 h-6 ${isSpinning ? 'animate-spin' : ''}`} />
@@ -318,10 +330,12 @@ export function RandomizerPage() {
             </div>
 
             {/* Accessories reminder */}
-            {accessoryReminder && (currentOutfit.top || currentOutfit.footwear) && (
+            {accessoryReminder && showReminder && (
               <motion.div
+                key="reminder"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
                 className="mt-6 text-center px-6 py-3 rounded-xl bg-white/10 border border-white/20 max-w-2xl mx-auto text-sm opacity-90"
               >
                 👜 {accessoryReminder}
@@ -331,24 +345,52 @@ export function RandomizerPage() {
 
           {/* 7-Day Strip */}
           <div>
-            <h2 className="text-2xl mb-6 text-center">Save to Day</h2>
+            <h2 className="text-2xl mb-6 text-center">Weekly Planner</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
               {dayEntries.map((de) => {
                 const isToday = !de.isPast && de.dateStr === formatDateStr(new Date());
+                const isTicked = tickedDays.has(de.dateStr);
+
+                // Radio-button tick: selecting a day deselects any other ticked day
+                const handleTick = () => {
+                  if (de.isPast) return;
+                  setTickedDays(prev => {
+                    // If already ticked, untick it; otherwise select only this day
+                    if (prev.has(de.dateStr)) return new Set();
+                    return new Set([de.dateStr]);
+                  });
+                };
+
                 return (
                   <div
                     key={de.dateStr}
-                    className={`p-3 rounded-xl border transition-all ${de.isPast
-                      ? 'bg-white/5 border-white/10 opacity-40'
-                      : savedDayDate === de.dateStr
-                        ? 'bg-white/10 border-green-500 ring-2 ring-green-500'
-                        : isToday
-                          ? 'bg-purple-500/20 border-purple-400/40'
-                          : 'bg-white/10 border-white/20'
-                      }`}
+                    className={`relative p-3 rounded-xl border transition-all ${
+                      de.isPast
+                        ? 'bg-white/5 border-white/10 opacity-40'
+                        : isTicked
+                          ? 'bg-green-500/10 border-green-500/60 ring-1 ring-green-500/40'
+                          : isToday
+                            ? 'bg-purple-500/20 border-purple-400/40'
+                            : 'bg-white/10 border-white/20'
+                    }`}
                   >
+                    {/* Green tick checkbox – top right */}
+                    {!de.isPast && (
+                      <button
+                        onClick={handleTick}
+                        title={isTicked ? 'Untick day' : 'Tick to auto-save outfit'}
+                        className={`absolute top-2 right-2 w-5 h-5 rounded flex items-center justify-center border transition-all ${
+                          isTicked
+                            ? 'bg-green-500 border-green-400'
+                            : 'bg-white/10 border-white/30 hover:border-green-400'
+                        }`}
+                      >
+                        {isTicked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                      </button>
+                    )}
+
                     {/* Day label + date */}
-                    <div className="text-center mb-2">
+                    <div className="text-center mb-2 pr-4">
                       <div className={`text-xs font-semibold ${isToday ? 'text-purple-300' : 'opacity-70'}`}>
                         {de.label.split(' · ')[0]}
                       </div>
@@ -386,26 +428,16 @@ export function RandomizerPage() {
                       </div>
                     )}
 
-                    {/* Action buttons – disabled for past days */}
-                    {!de.isPast && (
+                    {/* Clear button – only shown when outfit is saved */}
+                    {!de.isPast && de.outfit && (
                       <div className="flex gap-1 justify-center">
-                        {de.outfit ? (
-                          <button
-                            onClick={() => clearDay(de.dateStr)}
-                            className="flex items-center gap-1 text-xs opacity-60 hover:opacity-100 hover:text-red-400 transition-all"
-                            title="Clear outfit"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => saveToDay(de.dateStr)}
-                            className="flex items-center gap-1 text-xs opacity-60 hover:opacity-100 hover:text-green-400 transition-all"
-                            title="Save outfit to this day"
-                          >
-                            <Save className="w-3 h-3" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => clearDay(de.dateStr)}
+                          className="flex items-center gap-1 text-xs opacity-60 hover:opacity-100 hover:text-red-400 transition-all"
+                          title="Clear outfit"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </div>
                     )}
                   </div>

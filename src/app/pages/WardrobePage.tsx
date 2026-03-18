@@ -4,7 +4,7 @@ import { Upload, Camera, X } from 'lucide-react';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
-import { getImageDominantColor, getClosestColorName, hexToRgb } from '../utils/colorDetection';
+import { getImageDominantColor, getClosestColorName } from '../utils/colorDetection';
 
 interface ClothingItem {
   id: string;
@@ -42,32 +42,19 @@ const FEMALE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'accessories', label: 'Accessories' },
 ];
 
-// ── Color Picker Canvas helpers ────────────────────────────────────────────
-function drawColorCanvas(canvas: HTMLCanvasElement, hue: number) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const w = canvas.width;
-  const h = canvas.height;
-
-  // White → Hue gradient (horizontal)
-  const gradH = ctx.createLinearGradient(0, 0, w, 0);
-  gradH.addColorStop(0, 'white');
-  gradH.addColorStop(1, `hsl(${hue}, 100%, 50%)`);
-  ctx.fillStyle = gradH;
-  ctx.fillRect(0, 0, w, h);
-
-  // Transparent → Black gradient (vertical overlay)
-  const gradV = ctx.createLinearGradient(0, 0, 0, h);
-  gradV.addColorStop(0, 'rgba(0,0,0,0)');
-  gradV.addColorStop(1, 'rgba(0,0,0,1)');
-  ctx.fillStyle = gradV;
-  ctx.fillRect(0, 0, w, h);
-}
-
-function getColorAtPoint(canvas: HTMLCanvasElement, x: number, y: number): string {
-  const ctx = canvas.getContext('2d');
+// ── Color Picker: sample color directly from the image via an off-screen canvas ─
+function sampleImageColor(img: HTMLImageElement, xRatio: number, yRatio: number): string {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = img.naturalWidth || img.width;
+  offscreen.height = img.naturalHeight || img.height;
+  const ctx = offscreen.getContext('2d');
   if (!ctx) return '#808080';
-  const px = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+  ctx.drawImage(img, 0, 0);
+  const px = ctx.getImageData(
+    Math.round(xRatio * offscreen.width),
+    Math.round(yRatio * offscreen.height),
+    1, 1
+  ).data;
   return `#${px[0].toString(16).padStart(2, '0')}${px[1].toString(16).padStart(2, '0')}${px[2].toString(16).padStart(2, '0')}`;
 }
 
@@ -90,36 +77,32 @@ export function WardrobePage() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
 
-  // Color picker state
-  const [hue, setHue] = useState(0);
-  const [pinPos, setPinPos] = useState({ x: 200, y: 10 }); // default: near top-right = hue color
+  // Color picker state — pin is expressed as 0..1 ratios relative to preview image
+  const [pinPos, setPinPos] = useState({ xRatio: 0.5, yRatio: 0.5 });
   const [pickedColor, setPickedColor] = useState('#808080');
   const [pickedColorName, setPickedColorName] = useState('gray');
   const [isDraggingPin, setIsDraggingPin] = useState(false);
-  const [isDraggingHue, setIsDraggingHue] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const colorCanvasRef = useRef<HTMLCanvasElement>(null);
-  const hueBarRef = useRef<HTMLDivElement>(null);
+  const previewImgRef = useRef<HTMLImageElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const userGender = user?.gender || 'male';
   const typeOptions = userGender === 'female' ? FEMALE_TYPES : MALE_TYPES;
   const accessoryOptions = userGender === 'female' ? FEMALE_ACCESSORIES : MALE_ACCESSORIES;
   const categories = userGender === 'female' ? FEMALE_CATEGORIES : MALE_CATEGORIES;
 
-  // Draw HSL canvas whenever hue changes or modal opens
-  useEffect(() => {
-    if (showUploadModal && previewImage && colorCanvasRef.current) {
-      drawColorCanvas(colorCanvasRef.current, hue);
-      // Re-read color at current pin position
-      const col = getColorAtPoint(colorCanvasRef.current, pinPos.x, pinPos.y);
-      setPickedColor(col);
-      setPickedColorName(getClosestColorName(col));
-    }
-  }, [hue, showUploadModal, previewImage]);
+  // Sample image color at the current pin ratio position
+  const sampleFromImage = useCallback((xRatio: number, yRatio: number) => {
+    const img = previewImgRef.current;
+    if (!img || !img.complete) return;
+    const col = sampleImageColor(img, xRatio, yRatio);
+    setPickedColor(col);
+    setPickedColorName(getClosestColorName(col));
+  }, []);
 
   // Initialize color from detected dominant color
   const handleFileSelect = async (file: File) => {
@@ -131,84 +114,57 @@ export function WardrobePage() {
       const col = await getImageDominantColor(file);
       setPickedColor(col);
       setPickedColorName(getClosestColorName(col));
-      // Set hue from dominant color
-      const { r, g, b } = hexToRgb(col);
-      const max = Math.max(r, g, b), min = Math.min(r, g, b);
-      let h = 0;
-      if (max !== min) {
-        const d = max - min;
-        if (max === r) h = ((g - b) / d % 6) * 60;
-        else if (max === g) h = ((b - r) / d + 2) * 60;
-        else h = ((r - g) / d + 4) * 60;
-        if (h < 0) h += 360;
-      }
-      setHue(Math.round(h));
-      setPinPos({ x: 200, y: 10 });
+      setPinPos({ xRatio: 0.5, yRatio: 0.5 });
     };
     reader.readAsDataURL(file);
   };
 
-  // Pin drag handlers on the color canvas
-  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Pin drag handlers on the image preview overlay
+  const updatePinFromCoords = useCallback((clientX: number, clientY: number) => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const xRatio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const yRatio = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    setPinPos({ xRatio, yRatio });
+    sampleFromImage(xRatio, yRatio);
+  }, [sampleFromImage]);
+
+  const handleOverlayMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
     setIsDraggingPin(true);
-    updatePinFromEvent(e.nativeEvent, colorCanvasRef.current!);
+    updatePinFromCoords(e.clientX, e.clientY);
   };
-  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDraggingPin) return;
-    updatePinFromEvent(e.nativeEvent, colorCanvasRef.current!);
-  };
-  const handleCanvasMouseUp = () => setIsDraggingPin(false);
-  const handleCanvasTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  const handleOverlayTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
     setIsDraggingPin(true);
     const t = e.touches[0];
-    updatePinFromCoords(t.clientX, t.clientY, colorCanvasRef.current!);
+    updatePinFromCoords(t.clientX, t.clientY);
   };
-  const handleCanvasTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+
+  const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingPin) return;
+    updatePinFromCoords(e.clientX, e.clientY);
+  }, [isDraggingPin, updatePinFromCoords]);
+  const handleGlobalMouseUp = useCallback(() => setIsDraggingPin(false), []);
+  const handleGlobalTouchMove = useCallback((e: TouchEvent) => {
     if (!isDraggingPin) return;
     const t = e.touches[0];
-    updatePinFromCoords(t.clientX, t.clientY, colorCanvasRef.current!);
-  };
-
-  const updatePinFromEvent = (e: MouseEvent, canvas: HTMLCanvasElement) => {
-    updatePinFromCoords(e.clientX, e.clientY, canvas);
-  };
-
-  const updatePinFromCoords = (clientX: number, clientY: number, canvas: HTMLCanvasElement) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.max(0, Math.min(canvas.width, clientX - rect.left));
-    const y = Math.max(0, Math.min(canvas.height, clientY - rect.top));
-    setPinPos({ x, y });
-    const col = getColorAtPoint(canvas, x, y);
-    setPickedColor(col);
-    setPickedColorName(getClosestColorName(col));
-  };
-
-  // Hue slider drag
-  const handleHueMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    setIsDraggingHue(true);
-    updateHueFromEvent(e.nativeEvent);
-  };
-  const handleHueMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDraggingHue || !hueBarRef.current) return;
-    updateHueFromEvent(e);
-  }, [isDraggingHue]);
-  const handleHueMouseUp = useCallback(() => setIsDraggingHue(false), []);
+    updatePinFromCoords(t.clientX, t.clientY);
+  }, [isDraggingPin, updatePinFromCoords]);
 
   useEffect(() => {
-    window.addEventListener('mousemove', handleHueMouseMove);
-    window.addEventListener('mouseup', handleHueMouseUp);
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    window.addEventListener('touchmove', handleGlobalTouchMove);
+    window.addEventListener('touchend', handleGlobalMouseUp);
     return () => {
-      window.removeEventListener('mousemove', handleHueMouseMove);
-      window.removeEventListener('mouseup', handleHueMouseUp);
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      window.removeEventListener('touchmove', handleGlobalTouchMove);
+      window.removeEventListener('touchend', handleGlobalMouseUp);
     };
-  }, [handleHueMouseMove, handleHueMouseUp]);
-
-  const updateHueFromEvent = (e: MouseEvent) => {
-    if (!hueBarRef.current) return;
-    const rect = hueBarRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    setHue(Math.round((x / rect.width) * 360));
-  };
+  }, [handleGlobalMouseMove, handleGlobalMouseUp, handleGlobalTouchMove]);
 
   const handleUploadClick = () => {
     setShowUploadModal(true);
@@ -218,8 +174,7 @@ export function WardrobePage() {
     setType('top');
     setAccessoryType('');
     setOccasions([]);
-    setHue(0);
-    setPinPos({ x: 200, y: 10 });
+    setPinPos({ xRatio: 0.5, yRatio: 0.5 });
   };
 
   const handleCameraClick = async () => {
@@ -427,56 +382,48 @@ export function WardrobePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Preview */}
-                  <div className="aspect-square rounded-xl overflow-hidden bg-white/5">
-                    <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-
-                  {/* Color Picker */}
+                  {/* Preview with color picker pin overlay */}
                   <div>
-                    <label className="block mb-2 text-sm opacity-80">Pick Color</label>
-                    {/* HSL square */}
-                    <div className="relative mb-2 rounded-lg overflow-hidden" style={{ height: 140 }}>
-                      <canvas
-                        ref={colorCanvasRef}
-                        width={400}
-                        height={140}
-                        className="w-full h-full cursor-crosshair select-none"
-                        onMouseDown={handleCanvasMouseDown}
-                        onMouseMove={handleCanvasMouseMove}
-                        onMouseUp={handleCanvasMouseUp}
-                        onMouseLeave={handleCanvasMouseUp}
-                        onTouchStart={handleCanvasTouchStart}
-                        onTouchMove={handleCanvasTouchMove}
-                        onTouchEnd={() => setIsDraggingPin(false)}
+                    <label className="block mb-1 text-sm opacity-80">Pick Color — drag pin on image</label>
+                    <div
+                      ref={previewContainerRef}
+                      className="relative rounded-xl overflow-hidden bg-white/5 cursor-crosshair select-none"
+                      style={{ height: 180 }}
+                      onMouseDown={handleOverlayMouseDown}
+                      onTouchStart={handleOverlayTouchStart}
+                    >
+                      <img
+                        ref={previewImgRef}
+                        src={previewImage!}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onLoad={() => sampleFromImage(pinPos.xRatio, pinPos.yRatio)}
+                        draggable={false}
                       />
+                      {/* Transparent overlay to capture pointer events */}
+                      <div className="absolute inset-0" />
                       {/* Movable pin */}
                       <div
-                        className="absolute pointer-events-none"
+                        className="absolute pointer-events-none z-10"
                         style={{
-                          left: `${(pinPos.x / 400) * 100}%`,
-                          top: `${(pinPos.y / 140) * 100}%`,
+                          left: `${pinPos.xRatio * 100}%`,
+                          top: `${pinPos.yRatio * 100}%`,
                           transform: 'translate(-50%, -50%)',
                         }}
                       >
-                        <div className="w-5 h-5 rounded-full border-2 border-white shadow-md" style={{ backgroundColor: pickedColor }} />
+                        <div
+                          className="w-6 h-6 rounded-full shadow-lg"
+                          style={{
+                            backgroundColor: pickedColor,
+                            border: '2.5px solid white',
+                            boxShadow: '0 0 0 1.5px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.5)',
+                          }}
+                        />
                       </div>
                     </div>
-                    {/* Hue slider */}
-                    <div
-                      ref={hueBarRef}
-                      className="relative h-4 rounded-full cursor-pointer mb-2"
-                      style={{ background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)' }}
-                      onMouseDown={handleHueMouseDown}
-                    >
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-md pointer-events-none"
-                        style={{ left: `${(hue / 360) * 100}%`, transform: 'translate(-50%, -50%)', backgroundColor: `hsl(${hue},100%,50%)` }}
-                      />
-                    </div>
-                    {/* Color result */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg flex-shrink-0" style={{ backgroundColor: pickedColor }} />
+                    {/* Color result row */}
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="w-7 h-7 rounded-full border-2 border-white shadow-lg flex-shrink-0" style={{ backgroundColor: pickedColor }} />
                       <div>
                         <div className="text-sm font-semibold capitalize">{pickedColorName}</div>
                         <div className="text-xs opacity-60">{pickedColor}</div>
