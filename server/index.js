@@ -249,9 +249,12 @@ app.delete('/api/events', requireAuth, (req, res) => {
 
 // In production, serve the Vite build and handle SPA routing
 if (isProd) {
-  const distPath = path.join(__dirname, '../dist');
-  app.get('/:path*', (req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
+  const distPath = path.join(__dirname, '../dist'); // Ensure this is defined
+  app.use(express.static(distPath)); // This serves your CSS/JS files
+
+  // The "Catch-all" route
+  app.get(/^(?!\/api).+/, (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
