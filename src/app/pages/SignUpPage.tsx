@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowRight, User, Lock, Mail, Phone, Calendar, Palette } from 'lucide-react';
+import { ArrowRight, User, Lock, Mail, Phone, Calendar, Palette, Eye, EyeOff } from 'lucide-react';
 
 export function SignUpPage() {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ export function SignUpPage() {
     skinUndertone: '',
     favoriteColor: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +37,17 @@ export function SignUpPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    let processedValue = value;
+    if (name === 'phone') {
+      // Remove all non-digits and keep only up to 10 characters
+      processedValue = value.replace(/\D/g, '').slice(0, 10);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: processedValue,
     }));
   };
 
@@ -112,14 +121,21 @@ export function SignUpPage() {
                   <Lock size={18} />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3.5 rounded-xl dark:bg-white/5 bg-white/60 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 dark:placeholder-white/40 placeholder-gray-500 dark:focus:border-purple-500 focus:border-purple-400 dark:focus:bg-white/10 focus:bg-white focus:ring-2 dark:focus:ring-purple-500/20 focus:ring-purple-500/20 focus:outline-none transition-all shadow-sm"
+                  className="w-full pl-11 pr-11 py-3.5 rounded-xl dark:bg-white/5 bg-white/60 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 dark:placeholder-white/40 placeholder-gray-500 dark:focus:border-purple-500 focus:border-purple-400 dark:focus:bg-white/10 focus:bg-white focus:ring-2 dark:focus:ring-purple-500/20 focus:ring-purple-500/20 focus:outline-none transition-all shadow-sm"
                   placeholder="Password *"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/80 transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
 
               <div className="relative group">

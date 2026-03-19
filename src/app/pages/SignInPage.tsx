@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowRight, Lock, User } from 'lucide-react';
+import { ArrowRight, Lock, User, Eye, EyeOff } from 'lucide-react';
 
 export function SignInPage() {
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ export function SignInPage() {
     username: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,14 +104,21 @@ export function SignInPage() {
                   <Lock size={20} />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-4 rounded-xl dark:bg-white/5 bg-white/60 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 dark:placeholder-white/40 placeholder-gray-500 dark:focus:border-purple-500 focus:border-purple-400 dark:focus:bg-white/10 focus:bg-white focus:ring-2 dark:focus:ring-purple-500/20 focus:ring-purple-500/20 focus:outline-none transition-all shadow-sm"
+                  className="w-full pl-12 pr-12 py-4 rounded-xl dark:bg-white/5 bg-white/60 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 dark:placeholder-white/40 placeholder-gray-500 dark:focus:border-purple-500 focus:border-purple-400 dark:focus:bg-white/10 focus:bg-white focus:ring-2 dark:focus:ring-purple-500/20 focus:ring-purple-500/20 focus:outline-none transition-all shadow-sm"
                   placeholder="Password"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/80 transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
 
               <button
