@@ -405,26 +405,24 @@ export function RandomizerPage() {
                 return (
                   <div
                     key={de.dateStr}
-                    className={`relative p-3 rounded-xl border transition-all ${
-                      de.isPast
+                    className={`relative p-3 rounded-xl border transition-all ${de.isPast
                         ? 'bg-white/5 border-white/10 opacity-40'
                         : isTicked
                           ? 'bg-green-500/10 border-green-500/60 ring-1 ring-green-500/40'
                           : isToday
                             ? 'bg-purple-500/20 border-purple-400/40'
                             : 'bg-white/10 border-white/20'
-                    }`}
+                      }`}
                   >
                     {/* Green tick checkbox – top right */}
                     {!de.isPast && (
                       <button
                         onClick={handleTick}
                         title={isTicked ? 'Untick day' : 'Tick to auto-save outfit'}
-                        className={`absolute top-2 right-2 w-5 h-5 rounded flex items-center justify-center border transition-all ${
-                          isTicked
+                        className={`absolute top-2 right-2 w-5 h-5 rounded flex items-center justify-center border transition-all ${isTicked
                             ? 'bg-green-500 border-green-400'
                             : 'bg-white/10 border-white/30 hover:border-green-400'
-                        }`}
+                          }`}
                       >
                         {isTicked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                       </button>
