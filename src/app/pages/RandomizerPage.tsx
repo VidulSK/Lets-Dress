@@ -8,18 +8,19 @@ import { useAuth } from '../contexts/AuthContext';
 // ── Color Compatibility Array ─────────────────────────────────────────────────
 // Fill in matching color names for each base color.
 export const COLOR_COMBINATIONS: Record<string, string[]> = {
-  pink: ['light blue', 'dark blue', 'gray', 'white', 'black'],
-  red: ['light blue', 'dark blue', 'gray', 'white', 'black'],
-  orange: ['green', 'light blue', 'dark blue', 'white', 'black'],
-  beige: ['dark blue', 'purple', 'brown', 'white', 'black'],
-  yellow: ['green', 'dark blue', 'white', 'black'],
-  green: ['orange', 'purple', 'white', 'black'],
+  pink:       ['light blue', 'dark blue', 'gray', 'white', 'black'],
+  red:        ['light blue', 'dark blue', 'gray', 'white', 'black'],
+  orange:     ['green', 'light blue', 'dark blue', 'white', 'black'],
+  beige:      ['dark blue', 'purple', 'brown', 'white', 'black'],
+  yellow:     ['green', 'dark blue', 'white', 'black'],
+  green:      ['orange', 'purple', 'white', 'black'],
   'light blue': ['pink', 'red', 'orange', 'white', 'black'],
-  'dark blue': ['pink', 'red', 'yellow', 'gray', 'white', 'black'],
-  purple: ['orange', 'gray', 'green', 'white', 'black'],
-  brown: ['beige', 'white', 'black'],
-  gray: ['pink', 'red', 'dark blue', 'purple'],
-  white: ['pink', 'red', 'orange', 'beige', 'yellow', 'green', 'light blue', 'dark blue', 'purple', 'brown']
+  'dark blue':  ['pink', 'red', 'yellow', 'gray', 'white', 'black'],
+  purple:     ['orange', 'gray', 'green', 'white', 'black'],
+  brown:      ['beige', 'white', 'black'],
+  black:      ['white', 'gray', 'beige', 'red', 'pink', 'yellow', 'light blue', 'dark blue', 'green', 'purple', 'orange', 'brown'],
+  gray:       ['pink', 'red', 'dark blue', 'purple', 'black'],
+  white:      ['pink', 'red', 'orange', 'beige', 'yellow', 'green', 'light blue', 'dark blue', 'purple', 'brown', 'black'],
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────

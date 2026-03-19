@@ -22,7 +22,8 @@ export function Navbar({ showAuth = false }: NavbarProps) {
                 alt="Logo"
                 className="w-12 h-12 rounded-full object-contain p-1 bg-gray-100 hover:scale-125 transition-transform"
               />
-              <div>
+              {/* Hide text below 500 px — keep only the logo */}
+              <div className="max-[500px]:hidden">
                 <div className="font-semibold text-lg">Let's Dress</div>
                 <div className="text-sm opacity-70">
                   {isAuthenticated && user ? `Welcome, ${user.username}! ❤️` : 'Welcome Gorgeous ! ❤️'}

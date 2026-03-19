@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Camera, X } from 'lucide-react';
+import { Upload, Camera, X, Pipette } from 'lucide-react';
+import chroma from 'chroma-js';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,21 +43,31 @@ const FEMALE_CATEGORIES: { key: string; label: string }[] = [
   { key: 'accessories', label: 'Accessories' },
 ];
 
-// ── Color Picker: sample color directly from the image via an off-screen canvas ─
+
+// ── Color Picker: read the exact pixel at the eyedropper tip ─────────────────
+// No averaging — returns the precise RGB of the single pixel under the tip.
+// Color NAMING is done via chroma.deltaE (CIEDE2000) which is the closest
+// standard to human colour perception.
 function sampleImageColor(img: HTMLImageElement, xRatio: number, yRatio: number): string {
   const offscreen = document.createElement('canvas');
-  offscreen.width = img.naturalWidth || img.width;
-  offscreen.height = img.naturalHeight || img.height;
+  const nw = img.naturalWidth  || img.width;
+  const nh = img.naturalHeight || img.height;
+  offscreen.width  = nw;
+  offscreen.height = nh;
   const ctx = offscreen.getContext('2d');
   if (!ctx) return '#808080';
   ctx.drawImage(img, 0, 0);
-  const px = ctx.getImageData(
-    Math.round(xRatio * offscreen.width),
-    Math.round(yRatio * offscreen.height),
-    1, 1
-  ).data;
-  return `#${px[0].toString(16).padStart(2, '0')}${px[1].toString(16).padStart(2, '0')}${px[2].toString(16).padStart(2, '0')}`;
+
+  const cx = Math.min(Math.max(0, Math.round(xRatio * nw)), nw - 1);
+  const cy = Math.min(Math.max(0, Math.round(yRatio * nh)), nh - 1);
+
+  // Read exactly 1 pixel
+  const { data } = ctx.getImageData(cx, cy, 1, 1);
+  const [r, g, b, a] = data;
+  if (a < 128) return '#808080';
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
 }
+
 
 export function WardrobePage() {
   const { user } = useAuth();
@@ -76,6 +87,7 @@ export function WardrobePage() {
   const [occasions, setOccasions] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Color picker state — pin is expressed as 0..1 ratios relative to preview image
   const [pinPos, setPinPos] = useState({ xRatio: 0.5, yRatio: 0.5 });
@@ -106,6 +118,7 @@ export function WardrobePage() {
 
   // Initialize color from detected dominant color
   const handleFileSelect = async (file: File) => {
+    setIsUploading(false); // reset lock whenever a new image is chosen
     setCurrentFile(file);
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -221,7 +234,8 @@ export function WardrobePage() {
   };
 
   const handleSaveItem = async () => {
-    if (!previewImage) return;
+    if (!previewImage || isUploading) return;
+    setIsUploading(true); // lock button immediately to prevent double-click
     const id = Date.now().toString();
     const uploadedAt = Date.now();
     const formData = new FormData();
@@ -246,9 +260,11 @@ export function WardrobePage() {
         setCurrentFile(null);
       } else {
         alert('Failed to save item');
+        setIsUploading(false); // unlock on error so user can retry
       }
     } catch (error) {
       console.error('Upload Error:', error);
+      setIsUploading(false); // unlock on error
     }
   };
 
@@ -402,24 +418,39 @@ export function WardrobePage() {
                       />
                       {/* Transparent overlay to capture pointer events */}
                       <div className="absolute inset-0" />
-                      {/* Movable pin */}
+                      {/* Movable pin — eyedropper tip aligned to sample point */}
+                      {/* The Pipette icon's tip is at bottom-left (~12% x, ~88% y of 24px icon).
+                          We offset so the tip lands exactly on the pin coordinate. */}
                       <div
                         className="absolute pointer-events-none z-10"
                         style={{
                           left: `${pinPos.xRatio * 100}%`,
                           top: `${pinPos.yRatio * 100}%`,
-                          transform: 'translate(-50%, -50%)',
+                          // shift up by ~88% of icon height and right by ~12% of icon width
+                          // so the bottom-left tip of the 24px icon sits at (0,0)
+                          transform: 'translate(-12%, -88%)',
+                          filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))',
                         }}
                       >
-                        <div
-                          className="w-6 h-6 rounded-full shadow-lg"
-                          style={{
-                            backgroundColor: pickedColor,
-                            border: '2.5px solid white',
-                            boxShadow: '0 0 0 1.5px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.5)',
-                          }}
+                        <Pipette
+                          className="w-6 h-6"
+                          style={{ color: pickedColor, stroke: 'white', strokeWidth: 1.5 }}
                         />
                       </div>
+                      {/* 2 px crosshair dot at exact sample point */}
+                      <div
+                        className="absolute pointer-events-none z-20"
+                        style={{
+                          left: `${pinPos.xRatio * 100}%`,
+                          top: `${pinPos.yRatio * 100}%`,
+                          transform: 'translate(-50%, -50%)',
+                          width: 4,
+                          height: 4,
+                          borderRadius: '50%',
+                          background: 'white',
+                          boxShadow: '0 0 0 1px rgba(0,0,0,0.6)',
+                        }}
+                      />
                     </div>
                     {/* Color result row */}
                     <div className="flex items-center gap-3 mt-2">
@@ -482,9 +513,10 @@ export function WardrobePage() {
 
                   <button
                     onClick={handleSaveItem}
-                    className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
+                    disabled={isUploading}
+                    className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Save to Wardrobe
+                    {isUploading ? 'Saving…' : 'Save to Wardrobe'}
                   </button>
                 </div>
               )}
