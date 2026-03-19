@@ -1,6 +1,6 @@
 type ColorRule = {
   color: string;
-  anchor: { r: number; g: number; b: number }; // Added anchor for Tier 2 fallback
+  anchor: { r: number; g: number; b: number };
   ranges: { r: [number, number], g: [number, number], b: [number, number] };
   logic: (r: number, g: number, b: number, max: number, min: number) => boolean;
 };
@@ -28,13 +28,21 @@ const COLOR_RULES: ColorRule[] = [
     color: "red",
     anchor: { r: 255, g: 0, b: 0 },
     ranges: { r: [100, 255], g: [0, 100], b: [0, 100] },
-    logic: (r, g, b, max, min) => r === max && g < (r * 0.6) && b < (r * 0.6)
+    // Fixed: Added max and min to the arguments to match your Type definition
+    logic: (r, g, b, max, min) => {
+      const isRedDominant = r > g && r > b;
+      return isRedDominant && g < (r * 0.35) && b < (r * 0.35);
+    }
   },
   {
     color: "orange",
     anchor: { r: 255, g: 165, b: 0 },
-    ranges: { r: [150, 255], g: [70, 180], b: [0, 80] },
-    logic: (r, g, b, max, min) => r === max && g > (r * 0.4) && g < (r * 0.8) && b < (g * 0.8)
+    ranges: { r: [150, 255], g: [50, 180], b: [0, 100] },
+    // Fixed: Added max and min to the arguments to match your Type definition
+    logic: (r, g, b, max, min) => {
+      const isRedDominant = r > g && r > b;
+      return isRedDominant && g >= (r * 0.35) && g < (r * 0.8) && b < (g * 0.8);
+    }
   },
   {
     color: "brown",
@@ -57,14 +65,18 @@ const COLOR_RULES: ColorRule[] = [
   {
     color: "light blue",
     anchor: { r: 173, g: 216, b: 230 },
-    ranges: { r: [80, 200], g: [150, 240], b: [200, 255] },
-    logic: (r, g, b, max, min) => max > 150 && b === max && g > r && (b - r) > 40
+    // Expanded ranges to meet Dark Blue perfectly
+    ranges: { r: [50, 220], g: [100, 255], b: [150, 255] },
+    // Logic: Blue is max, brightness is > 180, and it's notably "blue" (b - r > 30)
+    logic: (r, g, b, max, min) => b === max && max >= 180 && g > r && (b - r) > 30
   },
   {
     color: "dark blue",
     anchor: { r: 0, g: 0, b: 139 },
-    ranges: { r: [0, 100], g: [0, 120], b: [80, 255] },
-    logic: (r, g, b, max, min) => b === max && r < (b * 0.7) && g < (b * 0.8) && (max - min) > 20
+    // Expanded ranges to meet Light Blue perfectly
+    ranges: { r: [0, 150], g: [0, 180], b: [80, 255] },
+    // Logic: Blue is max, brightness is < 180, and it has a minimum saturation (max - min > 20)
+    logic: (r, g, b, max, min) => b === max && max < 180 && r < (b * 0.8) && g < (b * 0.9) && (max - min) > 20
   },
   {
     color: "purple",
@@ -87,14 +99,13 @@ const COLOR_RULES: ColorRule[] = [
 ];
 
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  // Gracefully handle short hex codes (e.g., #FFF)
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
 
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }
-    : { r: 128, g: 128, b: 128 }; // Default to grey if parsing fails
+    : { r: 128, g: 128, b: 128 };
 }
 
 export function getClosestColorName(hex: string): string {
@@ -108,7 +119,6 @@ export function getClosestColorName(hex: string): string {
       g >= rule.ranges.g[0] && g <= rule.ranges.g[1] &&
       b >= rule.ranges.b[0] && b <= rule.ranges.b[1]) {
 
-      // If it's inside the bounding box, check the strict logic
       if (rule.logic(r, g, b, max, min)) {
         return rule.color;
       }
@@ -116,11 +126,10 @@ export function getClosestColorName(hex: string): string {
   }
 
   // --- TIER 2: Mathematical Fallback (Euclidean Distance) ---
-  let closestColor = "Undetected"; // Should theoretically never be returned now
+  let closestColor = "Undetected";
   let minDistance = Infinity;
 
   for (const rule of COLOR_RULES) {
-    // Calculate 3D distance in RGB space
     const distance = Math.sqrt(
       Math.pow(r - rule.anchor.r, 2) +
       Math.pow(g - rule.anchor.g, 2) +
