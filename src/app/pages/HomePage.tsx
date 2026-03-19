@@ -64,14 +64,14 @@ export function HomePage() {
         {/* Animated Background Gradients */}
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full dark:bg-purple-600/30 bg-purple-300/40 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full dark:bg-pink-600/30 bg-pink-300/40 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse delay-1000" />
-        
-        <div 
+
+        <div
           className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-overlay"
           style={{
             backgroundImage: 'url(/images/hero-bg.jpg)',
           }}
         />
-        
+
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -90,15 +90,15 @@ export function HomePage() {
           )}
           {!isAuthenticated && (
             <motion.div
-               initial={{ opacity: 0, y: -20 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ delay: 0.2 }}
-               className="mb-4 inline-block px-4 py-1 rounded-full dark:bg-white/10 bg-white/60 border dark:border-white/20 border-black/10 text-sm tracking-wider uppercase backdrop-blur-md dark:text-white text-gray-800"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-4 inline-block px-4 py-1 rounded-full dark:bg-white/10 bg-white/60 border dark:border-white/20 border-black/10 text-sm tracking-wider uppercase backdrop-blur-md dark:text-white text-gray-800"
             >
               Elevate Your Style
             </motion.div>
           )}
-          
+
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -127,7 +127,7 @@ export function HomePage() {
             >
               <div className="absolute inset-0 w-0 bg-gradient-to-r dark:from-purple-200 dark:to-pink-200 from-purple-500 to-pink-500 transition-all duration-[300ms] ease-out group-hover:w-full" />
               <span className="relative z-10 dark:group-hover:text-purple-900 group-hover:text-white transition-colors">
-                {isAuthenticated ? 'Go to Wardrobe' : 'Start Curating'}
+                {isAuthenticated ? 'Go to Wardrobe' : 'Start Dressing'}
               </span>
             </a>
             <a
@@ -153,10 +153,10 @@ export function HomePage() {
             <Clock className="w-16 h-16 mx-auto mb-6 opacity-80" />
             <h2 className="text-4xl md:text-5xl mb-6">Our Story</h2>
             <p className="text-lg opacity-80 leading-relaxed">
-              Every morning, millions of people waste precious time standing in front of their wardrobes, 
-              struggling to decide what to wear. We created Outfit Tracker to solve this universal problem. 
-              Our mission is to give you back your time by making outfit selection effortless and fun. 
-              With intelligent suggestions and personalized tracking, you'll spend less time worrying 
+              Every morning, millions of people waste precious time standing in front of their wardrobes,
+              struggling to decide what to wear. We created Outfit Tracker to solve this universal problem.
+              Our mission is to give you back your time by making outfit selection effortless and fun.
+              With intelligent suggestions and personalized tracking, you'll spend less time worrying
               about your clothes and more time living your life.
             </p>
           </motion.div>
@@ -176,7 +176,7 @@ export function HomePage() {
             <TrendingUp className="w-16 h-16 mx-auto mb-6 opacity-80" />
             <h2 className="text-4xl md:text-5xl mb-6">Trends and Styles</h2>
             <p className="text-lg opacity-80 mb-12">
-              Stay ahead with the latest fashion trends. From timeless old money aesthetics to modern streetwear, 
+              Stay ahead with the latest fashion trends. From timeless old money aesthetics to modern streetwear,
               we help you curate a wardrobe that reflects your unique style.
             </p>
           </motion.div>
@@ -282,7 +282,7 @@ export function HomePage() {
                 <div className="w-16 h-16 mb-6 rounded-2xl dark:bg-white/10 bg-white/80 backdrop-blur-sm shadow-sm border dark:border-white/5 border-black/5 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300">
                   {perk.emoji}
                 </div>
-                
+
                 {/* Text Content */}
                 <div className="space-y-4">
                   <h3 className="text-2xl font-bold dark:text-white text-gray-900">{perk.title}</h3>
