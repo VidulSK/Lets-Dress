@@ -1,140 +1,100 @@
 type ColorRule = {
   color: string;
+  anchor: { r: number; g: number; b: number }; // Added anchor for Tier 2 fallback
   ranges: { r: [number, number], g: [number, number], b: [number, number] };
   logic: (r: number, g: number, b: number, max: number, min: number) => boolean;
 };
 
 const COLOR_RULES: ColorRule[] = [
   {
+    color: "white",
+    anchor: { r: 255, g: 255, b: 255 },
+    ranges: { r: [210, 255], g: [210, 255], b: [210, 255] },
+    logic: (r, g, b, max, min) => min > 220 && (max - min) < 20
+  },
+  {
+    color: "grey",
+    anchor: { r: 128, g: 128, b: 128 },
+    ranges: { r: [40, 220], g: [40, 220], b: [40, 220] },
+    logic: (r, g, b, max, min) => (max - min) < 25 && max >= 40 && max <= 220
+  },
+  {
     color: "black",
-    ranges: { r: [0, 45], g: [0, 45], b: [0, 45] },
-    logic: (r, g, b, max, min) => (max - min) < 15
+    anchor: { r: 0, g: 0, b: 0 },
+    ranges: { r: [0, 60], g: [0, 60], b: [0, 60] },
+    logic: (r, g, b, max, min) => max < 45 || (max < 60 && (max - min) < 15)
   },
   {
     color: "red",
-    ranges: { r: [150, 255], g: [0, 75], b: [0, 75] },
-    logic: (r, g, b, max, min) => r > (g + 100) && r > (b + 100)
+    anchor: { r: 255, g: 0, b: 0 },
+    ranges: { r: [100, 255], g: [0, 100], b: [0, 100] },
+    logic: (r, g, b, max, min) => r === max && g < (r * 0.6) && b < (r * 0.6)
   },
   {
     color: "orange",
-    ranges: { r: [200, 255], g: [100, 180], b: [0, 80] },
-    logic: (r, g, b, max, min) => r > g && g > b
+    anchor: { r: 255, g: 165, b: 0 },
+    ranges: { r: [150, 255], g: [70, 180], b: [0, 80] },
+    logic: (r, g, b, max, min) => r === max && g > (r * 0.4) && g < (r * 0.8) && b < (g * 0.8)
   },
   {
     color: "brown",
-    ranges: { r: [80, 160], g: [40, 110], b: [0, 60] },
-    logic: (r, g, b, max, min) => r > g && g > b && r < 180
+    anchor: { r: 139, g: 69, b: 19 },
+    ranges: { r: [60, 180], g: [30, 120], b: [0, 80] },
+    logic: (r, g, b, max, min) => r === max && max <= 180 && g > (r * 0.3) && g < (r * 0.8) && b < g
   },
   {
     color: "yellow",
-    ranges: { r: [200, 255], g: [200, 255], b: [0, 100] },
-    logic: (r, g, b, max, min) => Math.abs(r - g) < 40 && b < (r - 100)
+    anchor: { r: 255, g: 255, b: 0 },
+    ranges: { r: [180, 255], g: [180, 255], b: [0, 120] },
+    logic: (r, g, b, max, min) => r > 150 && g > 150 && Math.abs(r - g) < (max * 0.2) && b < (min * 0.6)
   },
   {
     color: "green",
-    ranges: { r: [0, 130], g: [130, 255], b: [0, 130] },
-    logic: (r, g, b, max, min) => g > (r + 30) && g > (b + 30)
+    anchor: { r: 0, g: 128, b: 0 },
+    ranges: { r: [0, 180], g: [80, 255], b: [0, 180] },
+    logic: (r, g, b, max, min) => g === max && r < (g * 0.8) && b < (g * 0.9)
   },
   {
     color: "light blue",
-    ranges: { r: [100, 180], g: [180, 230], b: [220, 255] },
-    logic: (r, g, b, max, min) => b >= g && g > r && (r + g + b) > 500
+    anchor: { r: 173, g: 216, b: 230 },
+    ranges: { r: [80, 200], g: [150, 240], b: [200, 255] },
+    logic: (r, g, b, max, min) => max > 150 && b === max && g > r && (b - r) > 40
   },
   {
     color: "dark blue",
-    ranges: { r: [0, 70], g: [0, 100], b: [120, 255] },
-    logic: (r, g, b, max, min) => b > (r + 50) && b > (g + 30)
+    anchor: { r: 0, g: 0, b: 139 },
+    ranges: { r: [0, 100], g: [0, 120], b: [80, 255] },
+    logic: (r, g, b, max, min) => b === max && r < (b * 0.7) && g < (b * 0.8) && (max - min) > 20
   },
   {
     color: "purple",
-    ranges: { r: [100, 190], g: [0, 100], b: [120, 255] },
-    logic: (r, g, b, max, min) => g < r && g < b
+    anchor: { r: 128, g: 0, b: 128 },
+    ranges: { r: [80, 220], g: [0, 120], b: [100, 255] },
+    logic: (r, g, b, max, min) => (r === max || b === max) && r > g && b > g && Math.abs(r - b) < (max * 0.4)
   },
   {
     color: "pink",
-    ranges: { r: [200, 255], g: [100, 190], b: [150, 230] },
-    logic: (r, g, b, max, min) => r > b && b > g
+    anchor: { r: 255, g: 192, b: 203 },
+    ranges: { r: [180, 255], g: [80, 200], b: [120, 240] },
+    logic: (r, g, b, max, min) => r === max && min > 80 && b > (g * 0.9) && b < r && (r - g) > 30
   },
   {
     color: "beige",
-    ranges: { r: [220, 255], g: [200, 240], b: [170, 220] },
-    logic: (r, g, b, max, min) => r > g && g > b && (r - b) < 60
+    anchor: { r: 245, g: 245, b: 220 },
+    ranges: { r: [200, 255], g: [180, 240], b: [140, 220] },
+    logic: (r, g, b, max, min) => max > 200 && min > 130 && r >= g && g >= b && (r - b) < 70
   }
 ];
 
-export function getImageDominantColor(imageFile: File): Promise<string> {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { resolve('#808080'); return; }
-
-        const MAX_DIM = 200;
-        const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        const colorCounts: Record<string, { count: number, r: number, g: number, b: number }> = {};
-        COLOR_RULES.forEach(rule => colorCounts[rule.color] = { count: 0, r: 0, g: 0, b: 0 });
-
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
-          if (a < 128) continue;
-
-          const max = Math.max(r, g, b);
-          const min = Math.min(r, g, b);
-
-          for (const rule of COLOR_RULES) {
-            if (r >= rule.ranges.r[0] && r <= rule.ranges.r[1] &&
-              g >= rule.ranges.g[0] && g <= rule.ranges.g[1] &&
-              b >= rule.ranges.b[0] && b <= rule.ranges.b[1]) {
-              if (rule.logic(r, g, b, max, min)) {
-                colorCounts[rule.color].count++;
-                colorCounts[rule.color].r += r;
-                colorCounts[rule.color].g += g;
-                colorCounts[rule.color].b += b;
-                break;
-              }
-            }
-          }
-        }
-
-        let bestColor = '';
-        let maxCount = 0;
-        for (const rule of COLOR_RULES) {
-          if (colorCounts[rule.color].count > maxCount) {
-            maxCount = colorCounts[rule.color].count;
-            bestColor = rule.color;
-          }
-        }
-
-        if (maxCount > 0) {
-          const avgR = Math.round(colorCounts[bestColor].r / maxCount);
-          const avgG = Math.round(colorCounts[bestColor].g / maxCount);
-          const avgB = Math.round(colorCounts[bestColor].b / maxCount);
-          resolve(`#${avgR.toString(16).padStart(2, '0')}${avgG.toString(16).padStart(2, '0')}${avgB.toString(16).padStart(2, '0')}`);
-          return;
-        }
-
-        resolve('#808080');
-      };
-      img.src = e.target?.result as string;
-    };
-    reader.readAsDataURL(imageFile);
-  });
-}
-
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  // Gracefully handle short hex codes (e.g., #FFF)
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }
-    : { r: 128, g: 128, b: 128 };
+    : { r: 128, g: 128, b: 128 }; // Default to grey if parsing fails
 }
 
 export function getClosestColorName(hex: string): string {
@@ -142,15 +102,36 @@ export function getClosestColorName(hex: string): string {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
 
+  // --- TIER 1: Strict Range & Logic Match ---
   for (const rule of COLOR_RULES) {
     if (r >= rule.ranges.r[0] && r <= rule.ranges.r[1] &&
       g >= rule.ranges.g[0] && g <= rule.ranges.g[1] &&
       b >= rule.ranges.b[0] && b <= rule.ranges.b[1]) {
+
+      // If it's inside the bounding box, check the strict logic
       if (rule.logic(r, g, b, max, min)) {
         return rule.color;
       }
     }
   }
 
-  return 'gray';
+  // --- TIER 2: Mathematical Fallback (Euclidean Distance) ---
+  let closestColor = "Undetected"; // Should theoretically never be returned now
+  let minDistance = Infinity;
+
+  for (const rule of COLOR_RULES) {
+    // Calculate 3D distance in RGB space
+    const distance = Math.sqrt(
+      Math.pow(r - rule.anchor.r, 2) +
+      Math.pow(g - rule.anchor.g, 2) +
+      Math.pow(b - rule.anchor.b, 2)
+    );
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestColor = rule.color;
+    }
+  }
+
+  return closestColor;
 }

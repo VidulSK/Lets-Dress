@@ -5,7 +5,7 @@ import chroma from 'chroma-js';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
-import { getImageDominantColor, getClosestColorName } from '../utils/colorDetection';
+import { getClosestColorName } from '../utils/colorDetection';
 
 interface ClothingItem {
   id: string;
@@ -116,17 +116,16 @@ export function WardrobePage() {
     setPickedColorName(getClosestColorName(col));
   }, []);
 
-  // Initialize color from detected dominant color
-  const handleFileSelect = async (file: File) => {
+  // Initialize default color pin (will update on image load)
+  const handleFileSelect = (file: File) => {
     setIsUploading(false); // reset lock whenever a new image is chosen
     setCurrentFile(file);
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       const imageUrl = e.target?.result as string;
       setPreviewImage(imageUrl);
-      const col = await getImageDominantColor(file);
-      setPickedColor(col);
-      setPickedColorName(getClosestColorName(col));
+      setPickedColor('#808080');
+      setPickedColorName('gray');
       setPinPos({ xRatio: 0.5, yRatio: 0.5 });
     };
     reader.readAsDataURL(file);
