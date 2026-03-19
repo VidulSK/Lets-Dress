@@ -6,9 +6,8 @@ export function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2 text-sm opacity-80">
-            <span>Made with</span>
+            <span>Made for fashion lovers </span>
             <Heart className="w-4 h-4 fill-current" />
-            <span>for fashion lovers</span>
           </div>
           <div className="flex gap-6 text-sm opacity-80">
             <a href="#" className="hover:opacity-100 transition-opacity">Privacy</a>
@@ -16,7 +15,7 @@ export function Footer() {
             <a href="#" className="hover:opacity-100 transition-opacity">Contact</a>
           </div>
           <div className="text-sm opacity-80">
-            © 2026 Outfit Tracker. All rights reserved.
+            © 2026 Let's Dress. All rights reserved.
           </div>
         </div>
       </div>

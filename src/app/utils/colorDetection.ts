@@ -1,10 +1,16 @@
+/**
+ * Type definition for color matching rules
+ */
 type ColorRule = {
   color: string;
   anchor: { r: number; g: number; b: number };
-  ranges: { r: [number, number], g: [number, number], b: [number, number] };
+  ranges: { r: [number, number]; g: [number, number]; b: [number, number] };
   logic: (r: number, g: number, b: number, max: number, min: number) => boolean;
 };
 
+/**
+ * Comprehensive color classification rules
+ */
 const COLOR_RULES: ColorRule[] = [
   {
     color: "white",
@@ -28,7 +34,6 @@ const COLOR_RULES: ColorRule[] = [
     color: "red",
     anchor: { r: 255, g: 0, b: 0 },
     ranges: { r: [100, 255], g: [0, 100], b: [0, 100] },
-    // Fixed: Added max and min to the arguments to match your Type definition
     logic: (r, g, b, max, min) => {
       const isRedDominant = r > g && r > b;
       return isRedDominant && g < (r * 0.35) && b < (r * 0.35);
@@ -37,18 +42,26 @@ const COLOR_RULES: ColorRule[] = [
   {
     color: "orange",
     anchor: { r: 255, g: 165, b: 0 },
-    ranges: { r: [150, 255], g: [50, 180], b: [0, 100] },
-    // Fixed: Added max and min to the arguments to match your Type definition
+    // Orange needs high Red and moderate Green
+    ranges: { r: [150, 255], g: [80, 210], b: [0, 120] },
     logic: (r, g, b, max, min) => {
-      const isRedDominant = r > g && r > b;
-      return isRedDominant && g >= (r * 0.35) && g < (r * 0.8) && b < (g * 0.8);
+      const isRedDominant = r === max;
+      // Orange is bright: Red must be > 150. 
+      // Green is usually 40-80% of Red. Blue must be low.
+      return isRedDominant && r > 150 && g > (r * 0.4) && g < (r * 0.9) && b < (g * 0.6);
     }
   },
   {
     color: "brown",
     anchor: { r: 139, g: 69, b: 19 },
-    ranges: { r: [60, 180], g: [30, 120], b: [0, 80] },
-    logic: (r, g, b, max, min) => r === max && max <= 180 && g > (r * 0.3) && g < (r * 0.8) && b < g
+    // Brown is "Dark Orange": Red is lower, Green is lower
+    ranges: { r: [50, 170], g: [30, 120], b: [0, 100] },
+    logic: (r, g, b, max, min) => {
+      const isRedDominant = r === max;
+      const saturation = max - min;
+      // Brown is darker (max < 170) and less vibrant than orange
+      return isRedDominant && max < 175 && g > (r * 0.25) && g < (r * 0.7) && b < g && saturation > 20;
+    }
   },
   {
     color: "yellow",
@@ -65,17 +78,13 @@ const COLOR_RULES: ColorRule[] = [
   {
     color: "light blue",
     anchor: { r: 173, g: 216, b: 230 },
-    // Expanded ranges to meet Dark Blue perfectly
     ranges: { r: [50, 220], g: [100, 255], b: [150, 255] },
-    // Logic: Blue is max, brightness is > 180, and it's notably "blue" (b - r > 30)
     logic: (r, g, b, max, min) => b === max && max >= 180 && g > r && (b - r) > 30
   },
   {
     color: "dark blue",
     anchor: { r: 0, g: 0, b: 139 },
-    // Expanded ranges to meet Light Blue perfectly
     ranges: { r: [0, 150], g: [0, 180], b: [80, 255] },
-    // Logic: Blue is max, brightness is < 180, and it has a minimum saturation (max - min > 20)
     logic: (r, g, b, max, min) => b === max && max < 180 && r < (b * 0.8) && g < (b * 0.9) && (max - min) > 20
   },
   {
@@ -98,6 +107,9 @@ const COLOR_RULES: ColorRule[] = [
   }
 ];
 
+/**
+ * Converts Hex string to RGB object
+ */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
@@ -105,9 +117,12 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) }
-    : { r: 128, g: 128, b: 128 };
+    : { r: 128, g: 128, b: 128 }; // Default to grey if invalid
 }
 
+/**
+ * Main function to classify a color by name
+ */
 export function getClosestColorName(hex: string): string {
   const { r, g, b } = hexToRgb(hex);
   const max = Math.max(r, g, b);
@@ -115,10 +130,11 @@ export function getClosestColorName(hex: string): string {
 
   // --- TIER 1: Strict Range & Logic Match ---
   for (const rule of COLOR_RULES) {
-    if (r >= rule.ranges.r[0] && r <= rule.ranges.r[1] &&
+    if (
+      r >= rule.ranges.r[0] && r <= rule.ranges.r[1] &&
       g >= rule.ranges.g[0] && g <= rule.ranges.g[1] &&
-      b >= rule.ranges.b[0] && b <= rule.ranges.b[1]) {
-
+      b >= rule.ranges.b[0] && b <= rule.ranges.b[1]
+    ) {
       if (rule.logic(r, g, b, max, min)) {
         return rule.color;
       }
@@ -130,6 +146,7 @@ export function getClosestColorName(hex: string): string {
   let minDistance = Infinity;
 
   for (const rule of COLOR_RULES) {
+    // 3D Distance formula: sqrt((r2-r1)^2 + (g2-g1)^2 + (b2-b1)^2)
     const distance = Math.sqrt(
       Math.pow(r - rule.anchor.r, 2) +
       Math.pow(g - rule.anchor.g, 2) +

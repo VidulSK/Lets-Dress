@@ -8,19 +8,19 @@ import { useAuth } from '../contexts/AuthContext';
 // ── Color Compatibility Array ─────────────────────────────────────────────────
 // Fill in matching color names for each base color.
 export const COLOR_COMBINATIONS: Record<string, string[]> = {
-  pink:       ['light blue', 'dark blue', 'gray', 'white', 'black'],
-  red:        ['light blue', 'dark blue', 'gray', 'white', 'black'],
-  orange:     ['green', 'light blue', 'dark blue', 'white', 'black'],
-  beige:      ['dark blue', 'purple', 'brown', 'white', 'black'],
-  yellow:     ['green', 'dark blue', 'white', 'black'],
-  green:      ['orange', 'purple', 'white', 'black'],
+  pink: ['light blue', 'dark blue', 'gray', 'white', 'black'],
+  red: ['light blue', 'dark blue', 'gray', 'white', 'black'],
+  orange: ['green', 'light blue', 'dark blue', 'white', 'black'],
+  beige: ['dark blue', 'purple', 'brown', 'white', 'black'],
+  yellow: ['green', 'dark blue', 'white', 'black'],
+  green: ['orange', 'purple', 'white', 'black'],
   'light blue': ['pink', 'red', 'orange', 'white', 'black'],
-  'dark blue':  ['pink', 'red', 'yellow', 'gray', 'white', 'black'],
-  purple:     ['orange', 'gray', 'green', 'white', 'black'],
-  brown:      ['beige', 'white', 'black'],
-  black:      ['white', 'gray', 'beige', 'red', 'pink', 'yellow', 'light blue', 'dark blue', 'green', 'purple', 'orange', 'brown'],
-  gray:       ['pink', 'red', 'dark blue', 'purple', 'black'],
-  white:      ['pink', 'red', 'orange', 'beige', 'yellow', 'green', 'light blue', 'dark blue', 'purple', 'brown', 'black'],
+  'dark blue': ['pink', 'red', 'yellow', 'gray', 'white', 'black'],
+  purple: ['orange', 'gray', 'green', 'white', 'black'],
+  brown: ['beige', 'white', 'black'],
+  black: ['white', 'gray', 'beige', 'red', 'pink', 'yellow', 'light blue', 'dark blue', 'green', 'purple', 'orange', 'brown'],
+  gray: ['pink', 'red', 'dark blue', 'purple', 'black'],
+  white: ['pink', 'red', 'orange', 'beige', 'yellow', 'green', 'light blue', 'dark blue', 'purple', 'brown', 'black'],
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -333,7 +333,7 @@ export function RandomizerPage() {
                   <motion.div
                     animate={isSpinning ? { y: [-10, 10, -10] } : {}}
                     transition={{ repeat: isSpinning ? Infinity : 0, duration: 0.3 }}
-                    className="aspect-square rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20"
+                    className="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-white/10 backdrop-blur-sm border border-gray-300 dark:border-white/20 shadow-sm"
                   >
                     <AnimatePresence mode="wait">
                       {currentOutfit[slot as keyof Outfit] ? (
@@ -407,12 +407,12 @@ export function RandomizerPage() {
                   <div
                     key={de.dateStr}
                     className={`relative p-3 rounded-xl border transition-all ${de.isPast
-                        ? 'bg-white/5 border-white/10 opacity-40'
-                        : isTicked
-                          ? 'bg-green-500/10 border-green-500/60 ring-1 ring-green-500/40'
-                          : isToday
-                            ? 'bg-purple-500/20 border-purple-400/40'
-                            : 'bg-white/10 border-white/20'
+                      ? 'bg-white/5 border-white/10 opacity-40'
+                      : isTicked
+                        ? 'bg-green-500/10 border-green-500/60 ring-1 ring-green-500/40'
+                        : isToday
+                          ? 'bg-purple-500/20 border-purple-400/40'
+                          : 'bg-white/10 border-white/20'
                       }`}
                   >
                     {/* Green tick checkbox – top right */}
@@ -421,8 +421,8 @@ export function RandomizerPage() {
                         onClick={handleTick}
                         title={isTicked ? 'Untick day' : 'Tick to auto-save outfit'}
                         className={`absolute top-2 right-2 w-5 h-5 rounded flex items-center justify-center border transition-all ${isTicked
-                            ? 'bg-green-500 border-green-400'
-                            : 'bg-white/10 border-white/30 hover:border-green-400'
+                          ? 'bg-green-500 border-green-400'
+                          : 'bg-white/10 border-white/30 hover:border-green-400'
                           }`}
                       >
                         {isTicked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
