@@ -50,9 +50,9 @@ const FEMALE_CATEGORIES: { key: string; label: string }[] = [
 // standard to human colour perception.
 function sampleImageColor(img: HTMLImageElement, xRatio: number, yRatio: number): string {
   const offscreen = document.createElement('canvas');
-  const nw = img.naturalWidth  || img.width;
+  const nw = img.naturalWidth || img.width;
   const nh = img.naturalHeight || img.height;
-  offscreen.width  = nw;
+  offscreen.width = nw;
   offscreen.height = nh;
   const ctx = offscreen.getContext('2d');
   if (!ctx) return '#808080';
@@ -65,7 +65,7 @@ function sampleImageColor(img: HTMLImageElement, xRatio: number, yRatio: number)
   const { data } = ctx.getImageData(cx, cy, 1, 1);
   const [r, g, b, a] = data;
   if (a < 128) return '#808080';
-  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 
@@ -453,11 +453,14 @@ export function WardrobePage() {
                       />
                     </div>
                     {/* Color result row */}
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="w-7 h-7 rounded-full border-2 border-white shadow-lg flex-shrink-0" style={{ backgroundColor: pickedColor }} />
-                      <div>
-                        <div className="text-sm font-semibold capitalize">{pickedColorName}</div>
-                        <div className="text-xs opacity-60">{pickedColor}</div>
+                    <div className="flex items-center gap-4 mt-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                      <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg flex-shrink-0" style={{ backgroundColor: pickedColor }} />
+                      <div className="flex flex-col">
+                        <span className="text-xs opacity-70 uppercase tracking-widest font-semibold mb-0.5">Detected Color</span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold capitalize text-purple-400">{pickedColorName}</span>
+                          <span className="text-sm opacity-50 font-mono">{pickedColor}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
