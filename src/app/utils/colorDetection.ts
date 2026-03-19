@@ -43,6 +43,48 @@ const COLOR_RULES: ColorRule[] = [
     logic: (r, g, b, max, min) => r === max && max <= 180 && g > (r * 0.3) && g < (r * 0.8) && b < g
   },
   {
+    color: "coral",
+    anchor: { r: 255, g: 127, b: 80 },
+    ranges: { r: [200, 255], g: [80, 170], b: [40, 120] },
+    logic: (r, g, b, max, min) => r === max && g > (r * 0.35) && g < (r * 0.75) && b > (g * 0.3)
+  },
+  {
+    color: "gold",
+    anchor: { r: 255, g: 215, b: 0 },
+    ranges: { r: [200, 255], g: [180, 235], b: [0, 100] },
+    logic: (r, g, b, max, min) => r === max && g > (r * 0.7) && b < (g * 0.5)
+  },
+  {
+    color: "cyan",
+    anchor: { r: 0, g: 255, b: 255 },
+    ranges: { r: [0, 120], g: [150, 255], b: [150, 255] },
+    logic: (r, g, b, max, min) => g === max && b === max && r < (g * 0.5)
+  },
+  {
+    color: "teal",
+    anchor: { r: 0, g: 128, b: 128 },
+    ranges: { r: [0, 100], g: [80, 180], b: [80, 180] },
+    logic: (r, g, b, max, min) => g === max && b === max && r < (g * 0.4) && (max - min) > 20
+  },
+  {
+    color: "navy",
+    anchor: { r: 0, g: 0, b: 128 },
+    ranges: { r: [0, 70], g: [0, 80], b: [90, 170] },
+    logic: (r, g, b, max, min) => b === max && b > 90 && max - min > 40
+  },
+  {
+    color: "magenta",
+    anchor: { r: 255, g: 0, b: 255 },
+    ranges: { r: [150, 255], g: [0, 105], b: [150, 255] },
+    logic: (r, g, b, max, min) => r === max && b === max && g < (r * 0.4)
+  },
+  {
+    color: "lavender",
+    anchor: { r: 230, g: 230, b: 250 },
+    ranges: { r: [180, 255], g: [180, 255], b: [210, 255] },
+    logic: (r, g, b, max, min) => b === max && r > 160 && g > 160 && (max - min) < 70
+  },
+  {
     color: "yellow",
     anchor: { r: 255, g: 255, b: 0 },
     ranges: { r: [180, 255], g: [180, 255], b: [0, 120] },
@@ -97,6 +139,43 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
     : { r: 128, g: 128, b: 128 }; // Default to grey if parsing fails
 }
 
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (delta !== 0) {
+    s = delta / (1 - Math.abs(2 * l - 1));
+
+    switch (max) {
+      case r:
+        h = ((g - b) / delta) % 6;
+        break;
+      case g:
+        h = (b - r) / delta + 2;
+        break;
+      case b:
+        h = (r - g) / delta + 4;
+        break;
+    }
+
+    h = Math.round((h * 60 + 360) % 360);
+  }
+
+  return { h, s, l };
+}
+
+function hueDistance(h1: number, h2: number): number {
+  const diff = Math.abs(h1 - h2);
+  return Math.min(diff, 360 - diff);
+}
+
 export function getClosestColorName(hex: string): string {
   const { r, g, b } = hexToRgb(hex);
   const max = Math.max(r, g, b);
@@ -116,22 +195,32 @@ export function getClosestColorName(hex: string): string {
   }
 
   // --- TIER 2: Mathematical Fallback (Euclidean Distance) ---
-  let closestColor = "Undetected"; // Should theoretically never be returned now
-  let minDistance = Infinity;
+  const isNeutral = (max - min) < 25;
 
-  for (const rule of COLOR_RULES) {
-    // Calculate 3D distance in RGB space
-    const distance = Math.sqrt(
-      Math.pow(r - rule.anchor.r, 2) +
-      Math.pow(g - rule.anchor.g, 2) +
-      Math.pow(b - rule.anchor.b, 2)
-    );
+  const distanceResults = COLOR_RULES.map(rule => ({
+    color: rule.color,
+    distance: Math.hypot(r - rule.anchor.r, g - rule.anchor.g, b - rule.anchor.b)
+  })).sort((a, b) => a.distance - b.distance);
 
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestColor = rule.color;
+  if (!isNeutral && distanceResults[0]?.color === "grey") {
+    const targetHsl = rgbToHsl(r, g, b);
+
+    // Use HSL hue distance for non-neutral colors to avoid gray fallback.
+    const hoist = COLOR_RULES
+      .filter(rule => rule.color !== "grey")
+      .map(rule => ({
+        color: rule.color,
+        hueDistance: hueDistance(targetHsl.h, rgbToHsl(rule.anchor.r, rule.anchor.g, rule.anchor.b).h),
+        distance: Math.hypot(r - rule.anchor.r, g - rule.anchor.g, b - rule.anchor.b)
+      }))
+      .sort((a, b) => a.hueDistance - b.hueDistance || a.distance - b.distance);
+
+    if (hoist[0]) {
+      return hoist[0].color;
     }
+
+    return distanceResults[1]?.color ?? distanceResults[0]?.color ?? "Undetected";
   }
 
-  return closestColor;
+  return distanceResults[0]?.color ?? "Undetected";
 }
