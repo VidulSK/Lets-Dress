@@ -16,6 +16,7 @@
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
+    "@gradio/client": "^2.1.0",
     "@libsql/client": "^0.17.0",
     "@mui/icons-material": "7.3.5",
     "@mui/material": "7.3.5",
@@ -58,6 +59,7 @@
     "date-fns": "3.6.0",
     "embla-carousel-react": "8.6.0",
     "express": "^5.2.1",
+    "google-auth-library": "^10.6.2",
     "input-otp": "1.4.2",
     "lucide-react": "0.487.0",
     "motion": "12.23.24",

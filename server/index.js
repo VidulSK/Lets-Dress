@@ -5,7 +5,28 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+// @gradio/client is no longer needed - using GoogleAuth
+import { GoogleAuth } from 'google-auth-library';
 import { db } from './db.js';
+
+// HF_TOKEN is no longer needed since we are running IDM-VTON locally on port 7860!
+
+// ── Manual .env loader (fallback for when --env-file flag isn't available) ──
+try {
+  const envPath = new URL('../.env', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    for (const line of envContent.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+      if (!process.env[key]) process.env[key] = val;
+    }
+  }
+} catch { /* .env not found — rely on system env vars */ }
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +44,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/avatars', express.static(path.join(__dirname, '../public/avatars')));
 
 // Multer setup for image uploads
 const storage = multer.diskStorage({
@@ -255,7 +277,158 @@ app.delete('/api/events', requireAuth, (req, res) => {
   });
 });
 
-// In production, serve the Vite build and handle SPA routing
+// --- AVATAR ROUTE ---
+// Returns the path of the correct base avatar PNG based on gender + skinUndertone
+app.get('/api/avatar', requireAuth, (req, res) => {
+  db.get(`SELECT gender, skinUndertone FROM users WHERE id = ?`, [req.userId], (err, row) => {
+    if (err || !row) return res.status(500).json({ error: 'User not found' });
+    const gender = (row.gender || 'male').toLowerCase();
+    const undertone = (row.skinUndertone || 'neutral').toLowerCase();
+    // Map undertone to one of: warm | cool | neutral
+    let tone = 'neutral';
+    if (undertone.includes('warm')) tone = 'warm';
+    else if (undertone.includes('cool')) tone = 'cool';
+    const avatarPath = `/avatars/${gender}-${tone}.png`;
+    res.json({ avatarPath });
+  });
+});
+
+// --- VIRTUAL TRY-ON PROXY ROUTE ---
+// Two-step try-on: Step 1 = avatar + top, Step 2 = result of step 1 + bottom
+// Body: { garmentImageUrl: string, bottomImageUrl?: string }
+app.post('/api/tryon', requireAuth, async (req, res) => {
+  const { garmentImageUrl, bottomImageUrl } = req.body;
+  if (!garmentImageUrl) return res.status(400).json({ error: 'garmentImageUrl is required' });
+
+  // Helper: load image from a server-relative path or absolute URL -> Buffer
+  async function loadImageBuffer(url) {
+    if (url.startsWith('/uploads/')) return fs.readFileSync(path.join(__dirname, url));
+    const r = await fetch(url);
+    return Buffer.from(await r.arrayBuffer());
+  }
+
+  async function callTryOnSpace(personBlob, garmentBlob) {
+    // ── Google Vertex AI Serverless Engine ──
+    const projectId = process.env.GCP_PROJECT_ID;
+    const location = process.env.GCP_LOCATION || 'us-central1';
+    
+    if (!projectId) {
+      throw new Error("GCP_PROJECT_ID is missing from .env File");
+    }
+
+    try {
+      // Automatically uses GOOGLE_APPLICATION_CREDENTIALS from the environment
+      const auth = new GoogleAuth({
+        scopes: ['https://www.googleapis.com/auth/cloud-platform']
+      });
+      const client = await auth.getClient();
+      const token = await client.getAccessToken();
+
+      const endpoint = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/virtual-try-on-001:predict`;
+
+      // Convert Blobs to Base64 (Node JS Blobs -> ArrayBuffer -> Buffer -> Base64)
+      const personArr = await personBlob.arrayBuffer();
+      const garmentArr = await garmentBlob.arrayBuffer();
+
+      // Official schema from cloud.google.com/vertex-ai/generative-ai/docs/model-reference/virtual-try-on-api
+      const payload = {
+        instances: [
+          {
+            personImage: {
+              image: { bytesBase64Encoded: Buffer.from(personArr).toString('base64') }
+            },
+            productImages: [
+              {
+                image: { bytesBase64Encoded: Buffer.from(garmentArr).toString('base64') }
+              }
+            ]
+          }
+        ],
+        parameters: { sampleCount: 1 }
+      };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(`Vertex AI Error: ${JSON.stringify(data.error || data)}`);
+      }
+
+      // Vertex AI typically returns predictions array containing bytesBase64Encoded 
+      if (data.predictions && data.predictions.length > 0) {
+        const outBase64 = data.predictions[0].bytesBase64Encoded;
+        if (outBase64) {
+          return Buffer.from(outBase64, 'base64');
+        }
+      }
+
+      throw new Error('No bytesBase64Encoded returned in prediction response');
+    } catch (err) {
+      console.error(`[VertexAI] Connection failed:`, err?.message || err);
+      throw new Error(`Vertex AI prediction failed. Ensure GOOGLE_APPLICATION_CREDENTIALS and GCP_PROJECT_ID are correct. ${err?.message || ''}`);
+    }
+  }
+
+  try {
+    // Resolve avatar for this user
+    const user = await new Promise((resolve, reject) => {
+      db.get(`SELECT gender, skinUndertone FROM users WHERE id = ?`, [req.userId], (err, row) => {
+        if (err || !row) reject(new Error('User not found'));
+        else resolve(row);
+      });
+    });
+
+    const gender = (user.gender || 'male').toLowerCase();
+    const undertone = (user.skinUndertone || 'neutral').toLowerCase();
+    let tone = 'neutral';
+    if (undertone.includes('warm')) tone = 'warm';
+    else if (undertone.includes('cool')) tone = 'cool';
+
+    // Load base avatar
+    const avatarBuffer = fs.readFileSync(path.join(__dirname, '../public/avatars', `${gender}-${tone}.png`));
+
+    // STEP 1: Dress the TOP onto the base avatar
+    const topBuffer = await loadImageBuffer(garmentImageUrl);
+    const step1Buffer = await callTryOnSpace(
+      new Blob([avatarBuffer], { type: 'image/png' }),
+      new Blob([topBuffer], { type: 'image/jpeg' })
+    );
+    if (!step1Buffer) {
+      return res.status(503).json({ error: 'Virtual try-on service is currently unavailable. Please try again later.' });
+    }
+
+    // STEP 2 (optional): Dress the BOTTOM onto the top-dressed avatar
+    let finalBuffer = step1Buffer;
+    if (bottomImageUrl) {
+      const bottomBuffer = await loadImageBuffer(bottomImageUrl);
+      const step2Buffer = await callTryOnSpace(
+        new Blob([step1Buffer], { type: 'image/png' }),
+        new Blob([bottomBuffer], { type: 'image/jpeg' })
+      );
+      if (step2Buffer) finalBuffer = step2Buffer;
+      // If step 2 fails, we still return the top-only result (graceful degradation)
+    }
+
+    // Return final image as base64 data URL
+    const b64 = finalBuffer.toString('base64');
+    res.json({ imageDataUrl: `data:image/png;base64,${b64}` });
+
+  } catch (err) {
+    console.error('Try-on error:', err);
+    res.status(500).json({ error: 'Try-on failed: ' + (err?.message || 'Unknown error') });
+  }
+});
+
+
+
 if (isProd) {
   const distPath = path.join(__dirname, '../dist'); // Ensure this is defined
   app.use(express.static(distPath)); // This serves your CSS/JS files
