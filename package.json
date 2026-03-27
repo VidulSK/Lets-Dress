@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server/index.js",
-    "build": "npm install && vite build",
+    "build": "vite build",
     "dev:frontend": "vite",
     "dev:backend": "node server/index.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""

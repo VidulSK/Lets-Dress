@@ -399,7 +399,7 @@ export function RandomizerPage() {
       <div className="flex-1 px-6 py-24">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl mb-2">Outfit Randomizer</h1>
+            <h1 className="text-4xl mb-2">Outfit Randomizer <span className="text-xs opacity-30 text-emerald-400">v1.0.1</span></h1>
             <p className="opacity-80">Generate unique outfit combinations</p>
           </div>
 
@@ -706,6 +706,7 @@ export function RandomizerPage() {
       </div>
 
       <Footer />
+      <div className="text-[10px] text-center opacity-20 pb-4">Build Hash: {new Date().toISOString()}</div>
     </div>
   );
 }
