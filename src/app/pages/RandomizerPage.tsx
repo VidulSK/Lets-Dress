@@ -587,8 +587,13 @@ export function RandomizerPage() {
 
           {/* 7-Day Strip */}
           <div>
-            <h2 className="text-2xl mb-6 text-center">Weekly Planner</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl">Weekly Planner</h2>
+              <p className="text-[10px] uppercase tracking-widest opacity-50 mt-2 lg:hidden">
+                ⟷ Swipe left or right to explore your week ⟷
+              </p>
+            </div>
+            <div className="flex lg:grid lg:grid-cols-7 gap-3 overflow-x-auto snap-x snap-mandatory pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {dayEntries.map((de) => {
                 const isToday = !de.isPast && de.dateStr === formatDateStr(new Date());
                 const isTicked = tickedDays.has(de.dateStr);
@@ -608,7 +613,7 @@ export function RandomizerPage() {
                 return (
                   <div
                     key={de.dateStr}
-                    className={`relative p-3 rounded-xl border transition-all ${de.isPast
+                    className={`relative flex-shrink-0 snap-start w-[140px] sm:w-[160px] lg:w-auto p-3 rounded-xl border transition-all ${de.isPast
                         ? 'bg-white/5 border-white/10 opacity-40'
                         : isTicked
                           ? 'bg-green-500/10 border-green-500/60 ring-1 ring-green-500/40'
