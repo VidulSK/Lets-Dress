@@ -586,14 +586,14 @@ export function RandomizerPage() {
           </AnimatePresence>
 
           {/* 7-Day Strip */}
-          <div>
+          <div className="w-full">
             <div className="text-center mb-6">
               <h2 className="text-2xl">Weekly Planner</h2>
               <p className="text-[10px] uppercase tracking-widest opacity-50 mt-2 lg:hidden">
                 ⟷ Swipe left or right to explore your week ⟷
               </p>
             </div>
-            <div className="flex lg:grid lg:grid-cols-7 gap-3 overflow-x-auto snap-x snap-mandatory pb-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="flex flex-nowrap lg:grid lg:grid-cols-7 gap-3 overflow-x-auto snap-x snap-mandatory pb-4 w-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
               {dayEntries.map((de) => {
                 const isToday = !de.isPast && de.dateStr === formatDateStr(new Date());
                 const isTicked = tickedDays.has(de.dateStr);

@@ -321,6 +321,12 @@ app.post('/api/tryon', requireAuth, async (req, res) => {
         scopes: ['https://www.googleapis.com/auth/cloud-platform']
       };
 
+      // Clean up Windows paths in production deployment bounds
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS && !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+        console.warn('GOOGLE_APPLICATION_CREDENTIALS points to a missing file (likely from local .env). Ignoring it.');
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      }
+
       // In production/deployment, reading from a local C:\ file path fails.
       // We check for direct JSON injection via environment variables first.
       if (process.env.GCP_CREDENTIALS_BASE64) {
