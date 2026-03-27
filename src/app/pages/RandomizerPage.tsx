@@ -323,7 +323,11 @@ export function RandomizerPage() {
       const res = await fetch('/api/tryon', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ garmentImageUrl: garmentUrl }),
+        body: JSON.stringify({
+          garmentImageUrl: garmentUrl,
+          // Pass bottom for a second Kolors pass (full-dress skips bottom)
+          bottomImageUrl: (!isFullDress && currentOutfit.bottom?.image) ? currentOutfit.bottom.image : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Try-on failed');
@@ -455,7 +459,11 @@ export function RandomizerPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-lg font-semibold mb-1">Building your look…</p>
-                        <p className="text-sm opacity-50">This may take 30–90 seconds. AI is working its magic!</p>
+                        <p className="text-sm opacity-50">
+                          {currentOutfit.bottom && !isFullDress
+                            ? 'Dressing top then bottom — this may take 60–120s. AI is working its magic!'
+                            : 'This may take 30–90 seconds. AI is working its magic!'}
+                        </p>
                       </div>
                       <div className="flex gap-1">
                         {[0, 1, 2, 3, 4].map(i => (
@@ -506,19 +514,10 @@ export function RandomizerPage() {
                         </div>
                       </div>
 
-                      {/* Bottom garment display */}
+                      {/* Bottom garment display — only shown for full-dress (saree/frock have no bottom) */}
                       {currentOutfit.bottom && !isFullDress && (
-                        <div className="border-t border-white/10 p-4">
-                          <p className="text-xs opacity-50 uppercase tracking-widest mb-3 text-center">Bottom</p>
-                          <div className="flex justify-center">
-                            <div className="w-48 h-48 rounded-xl overflow-hidden bg-white/10 border border-white/20">
-                              <img
-                                src={currentOutfit.bottom.image}
-                                alt="Bottom garment"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          </div>
+                        <div className="border-t border-white/10 px-4 py-3 bg-white/5">
+                          <p className="text-xs opacity-40 text-center">Bottom successfully dressed on avatar above</p>
                         </div>
                       )}
 

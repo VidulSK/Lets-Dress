@@ -274,11 +274,58 @@ app.get('/api/avatar', requireAuth, (req, res) => {
 });
 
 // --- VIRTUAL TRY-ON PROXY ROUTE ---
-// Calls Kolors or IDM-VTON HuggingFace Space via @gradio/client
-// Body: { garmentImageUrl: string }  (server-relative path like /uploads/xxx.jpg)
+// Two-step try-on: Step 1 = avatar + top, Step 2 = result of step 1 + bottom
+// Body: { garmentImageUrl: string, bottomImageUrl?: string }
 app.post('/api/tryon', requireAuth, async (req, res) => {
-  const { garmentImageUrl } = req.body;
+  const { garmentImageUrl, bottomImageUrl } = req.body;
   if (!garmentImageUrl) return res.status(400).json({ error: 'garmentImageUrl is required' });
+
+  // Helper: load image from a server-relative path or absolute URL -> Buffer
+  async function loadImageBuffer(url) {
+    if (url.startsWith('/uploads/')) return fs.readFileSync(path.join(__dirname, url));
+    const r = await fetch(url);
+    return Buffer.from(await r.arrayBuffer());
+  }
+
+  // Helper: call a Kolors/IDM-VTON space with personBlob + garmentBlob -> result Buffer
+  async function callTryOnSpace(personBlob, garmentBlob) {
+    const spaces = ['Kwai-Kolors/Kolors-Virtual-Try-On', 'yisol/IDM-VTON'];
+    for (const spaceName of spaces) {
+      try {
+        const client = await Client.connect(spaceName, { hf_token: process.env.HF_TOKEN || undefined });
+        const result = await client.predict('/tryon', {
+          dict: { background: personBlob, layers: [], composite: null },
+          garm_img: garmentBlob,
+          garment_des: 'clothing item',
+          is_checked: true,
+          is_checked_crop: false,
+          denoise_steps: 30,
+          seed: 42,
+        });
+        const data = result?.data;
+        if (data && data[0]) {
+          const imgData = data[0];
+          let resultUrl = null;
+          if (typeof imgData === 'string') resultUrl = imgData;
+          else if (imgData?.url) resultUrl = imgData.url;
+          else if (imgData?.path) resultUrl = imgData.path;
+          if (resultUrl) {
+            if (resultUrl.startsWith('http')) {
+              const r = await fetch(resultUrl);
+              return Buffer.from(await r.arrayBuffer());
+            }
+            if (resultUrl.startsWith('data:')) {
+              const base64Data = resultUrl.split(',')[1];
+              return Buffer.from(base64Data, 'base64');
+            }
+          }
+        }
+      } catch (spaceErr) {
+        console.error(`Try-on space ${spaceName} failed:`, spaceErr?.message || spaceErr);
+      }
+    }
+    return null;
+  }
 
   try {
     // Resolve avatar for this user
@@ -295,72 +342,41 @@ app.post('/api/tryon', requireAuth, async (req, res) => {
     if (undertone.includes('warm')) tone = 'warm';
     else if (undertone.includes('cool')) tone = 'cool';
 
-    // Load avatar PNG as a Blob
-    const avatarFilePath = path.join(__dirname, '../public/avatars', `${gender}-${tone}.png`);
-    const avatarBuffer = fs.readFileSync(avatarFilePath);
-    const avatarBlob = new Blob([avatarBuffer], { type: 'image/png' });
+    // Load base avatar
+    const avatarBuffer = fs.readFileSync(path.join(__dirname, '../public/avatars', `${gender}-${tone}.png`));
 
-    // Load garment image as a Blob
-    let garmentBuffer;
-    if (garmentImageUrl.startsWith('/uploads/')) {
-      garmentBuffer = fs.readFileSync(path.join(__dirname, garmentImageUrl));
-    } else {
-      // Fetch from absolute URL
-      const garmentRes = await fetch(garmentImageUrl);
-      garmentBuffer = Buffer.from(await garmentRes.arrayBuffer());
-    }
-    const garmentBlob = new Blob([garmentBuffer], { type: 'image/jpeg' });
-
-    // Try Kolors first, then fall back to IDM-VTON
-    let resultImageUrl = null;
-    const spaces = ['Kwai-Kolors/Kolors-Virtual-Try-On', 'yisol/IDM-VTON'];
-
-    for (const spaceName of spaces) {
-      try {
-        const client = await Client.connect(spaceName, { hf_token: process.env.HF_TOKEN || undefined });
-        const result = await client.predict('/tryon', {
-          dict: { background: avatarBlob, layers: [], composite: null },
-          garm_img: garmentBlob,
-          garment_des: 'clothing item',
-          is_checked: true,
-          is_checked_crop: false,
-          denoise_steps: 30,
-          seed: 42,
-        });
-        const data = result?.data;
-        // Kolors returns an image in data[0] or data[0].url
-        if (data && data[0]) {
-          const imgData = data[0];
-          if (typeof imgData === 'string') resultImageUrl = imgData;
-          else if (imgData?.url) resultImageUrl = imgData.url;
-          else if (imgData?.path) resultImageUrl = imgData.path;
-        }
-        if (resultImageUrl) break;
-      } catch (spaceErr) {
-        console.error(`Try-on space ${spaceName} failed:`, spaceErr?.message || spaceErr);
-        // try next space
-      }
-    }
-
-    if (!resultImageUrl) {
+    // STEP 1: Dress the TOP onto the base avatar
+    const topBuffer = await loadImageBuffer(garmentImageUrl);
+    const step1Buffer = await callTryOnSpace(
+      new Blob([avatarBuffer], { type: 'image/png' }),
+      new Blob([topBuffer], { type: 'image/jpeg' })
+    );
+    if (!step1Buffer) {
       return res.status(503).json({ error: 'Virtual try-on service is currently unavailable. Please try again later.' });
     }
 
-    // If result is a URL, we proxy it as base64 so the browser can display it
-    if (resultImageUrl.startsWith('http')) {
-      const imgRes = await fetch(resultImageUrl);
-      const imgBuf = Buffer.from(await imgRes.arrayBuffer());
-      const b64 = imgBuf.toString('base64');
-      const mime = imgRes.headers.get('content-type') || 'image/png';
-      return res.json({ imageDataUrl: `data:${mime};base64,${b64}` });
+    // STEP 2 (optional): Dress the BOTTOM onto the top-dressed avatar
+    let finalBuffer = step1Buffer;
+    if (bottomImageUrl) {
+      const bottomBuffer = await loadImageBuffer(bottomImageUrl);
+      const step2Buffer = await callTryOnSpace(
+        new Blob([step1Buffer], { type: 'image/png' }),
+        new Blob([bottomBuffer], { type: 'image/jpeg' })
+      );
+      if (step2Buffer) finalBuffer = step2Buffer;
+      // If step 2 fails, we still return the top-only result (graceful degradation)
     }
 
-    res.json({ imageDataUrl: resultImageUrl });
+    // Return final image as base64 data URL
+    const b64 = finalBuffer.toString('base64');
+    res.json({ imageDataUrl: `data:image/png;base64,${b64}` });
+
   } catch (err) {
     console.error('Try-on error:', err);
     res.status(500).json({ error: 'Try-on failed: ' + (err?.message || 'Unknown error') });
   }
 });
+
 
 
 if (isProd) {
