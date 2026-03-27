@@ -5,8 +5,28 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { Client } from '@gradio/client';
+// @gradio/client is no longer needed - using GoogleAuth
+import { GoogleAuth } from 'google-auth-library';
 import { db } from './db.js';
+
+// HF_TOKEN is no longer needed since we are running IDM-VTON locally on port 7860!
+
+// ── Manual .env loader (fallback for when --env-file flag isn't available) ──
+try {
+  const envPath = new URL('../.env', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    for (const line of envContent.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx === -1) continue;
+      const key = trimmed.slice(0, eqIdx).trim();
+      const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+      if (!process.env[key]) process.env[key] = val;
+    }
+  }
+} catch { /* .env not found — rely on system env vars */ }
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -287,44 +307,74 @@ app.post('/api/tryon', requireAuth, async (req, res) => {
     return Buffer.from(await r.arrayBuffer());
   }
 
-  // Helper: call a Kolors/IDM-VTON space with personBlob + garmentBlob -> result Buffer
   async function callTryOnSpace(personBlob, garmentBlob) {
-    const spaces = ['Kwai-Kolors/Kolors-Virtual-Try-On', 'yisol/IDM-VTON'];
-    for (const spaceName of spaces) {
-      try {
-        const client = await Client.connect(spaceName, { hf_token: process.env.HF_TOKEN || undefined });
-        const result = await client.predict('/tryon', {
-          dict: { background: personBlob, layers: [], composite: null },
-          garm_img: garmentBlob,
-          garment_des: 'clothing item',
-          is_checked: true,
-          is_checked_crop: false,
-          denoise_steps: 30,
-          seed: 42,
-        });
-        const data = result?.data;
-        if (data && data[0]) {
-          const imgData = data[0];
-          let resultUrl = null;
-          if (typeof imgData === 'string') resultUrl = imgData;
-          else if (imgData?.url) resultUrl = imgData.url;
-          else if (imgData?.path) resultUrl = imgData.path;
-          if (resultUrl) {
-            if (resultUrl.startsWith('http')) {
-              const r = await fetch(resultUrl);
-              return Buffer.from(await r.arrayBuffer());
-            }
-            if (resultUrl.startsWith('data:')) {
-              const base64Data = resultUrl.split(',')[1];
-              return Buffer.from(base64Data, 'base64');
-            }
-          }
-        }
-      } catch (spaceErr) {
-        console.error(`Try-on space ${spaceName} failed:`, spaceErr?.message || spaceErr);
-      }
+    // ── Google Vertex AI Serverless Engine ──
+    const projectId = process.env.GCP_PROJECT_ID;
+    const location = process.env.GCP_LOCATION || 'us-central1';
+    
+    if (!projectId) {
+      throw new Error("GCP_PROJECT_ID is missing from .env File");
     }
-    return null;
+
+    try {
+      // Automatically uses GOOGLE_APPLICATION_CREDENTIALS from the environment
+      const auth = new GoogleAuth({
+        scopes: ['https://www.googleapis.com/auth/cloud-platform']
+      });
+      const client = await auth.getClient();
+      const token = await client.getAccessToken();
+
+      const endpoint = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/virtual-try-on-001:predict`;
+
+      // Convert Blobs to Base64 (Node JS Blobs -> ArrayBuffer -> Buffer -> Base64)
+      const personArr = await personBlob.arrayBuffer();
+      const garmentArr = await garmentBlob.arrayBuffer();
+
+      // Official schema from cloud.google.com/vertex-ai/generative-ai/docs/model-reference/virtual-try-on-api
+      const payload = {
+        instances: [
+          {
+            personImage: {
+              image: { bytesBase64Encoded: Buffer.from(personArr).toString('base64') }
+            },
+            productImages: [
+              {
+                image: { bytesBase64Encoded: Buffer.from(garmentArr).toString('base64') }
+              }
+            ]
+          }
+        ],
+        parameters: { sampleCount: 1 }
+      };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(`Vertex AI Error: ${JSON.stringify(data.error || data)}`);
+      }
+
+      // Vertex AI typically returns predictions array containing bytesBase64Encoded 
+      if (data.predictions && data.predictions.length > 0) {
+        const outBase64 = data.predictions[0].bytesBase64Encoded;
+        if (outBase64) {
+          return Buffer.from(outBase64, 'base64');
+        }
+      }
+
+      throw new Error('No bytesBase64Encoded returned in prediction response');
+    } catch (err) {
+      console.error(`[VertexAI] Connection failed:`, err?.message || err);
+      throw new Error(`Vertex AI prediction failed. Ensure GOOGLE_APPLICATION_CREDENTIALS and GCP_PROJECT_ID are correct. ${err?.message || ''}`);
+    }
   }
 
   try {

@@ -211,21 +211,15 @@ export function RandomizerPage() {
       return;
     }
 
-    // Snapshot the ticked days NOW before any async work
     const targetDates = [...tickedDays];
-
     setIsSpinning(true);
     setShowReminder(false);
 
-    // Use the first ticked day's event (if any) to guide outfit generation
     const firstTickedDate = targetDates[0];
     const eventForDay = events.find(e => e.date === firstTickedDate) || null;
     const requiredDressType = eventForDay?.dressType || null;
-
-    // Female: include sarees & frocks as "tops"
     const topTypes = isFemale ? ['top', 'saree', 'frock'] : ['top'];
 
-    // Filter by occasion if event has a dress type
     const filterByOccasion = (itms: ClothingItem[]) => {
       if (!requiredDressType) return itms;
       return itms.filter(i => {
@@ -234,46 +228,97 @@ export function RandomizerPage() {
       });
     };
 
-    let tops = filterByOccasion(items.filter(i => topTypes.includes(i.type)));
-    const availTops = tops.filter(i => !history.top.includes(i.id));
-    const topPool = availTops.length > 0 ? availTops : tops;
-    const newTop = pickRandom(topPool);
+    // ── Smart exclusion: exclude last N used items per slot ──
+    // Only applies exclusion if the pool is larger than the window (adequate wardrobe)
+    const EXCLUSION_ROUNDS = 4;
+
+    // ── Cross-day exclusion: extract ALL items worn in the visible 7-day planner ──
+    const savedEntries = dayEntries.filter(de => de.outfit && de.dateStr !== firstTickedDate);
+    const crossDayTopIds = savedEntries.map(de => de.outfit?.top?.id).filter(Boolean) as string[];
+    const crossDayBottomIds = savedEntries.map(de => de.outfit?.bottom?.id).filter(Boolean) as string[];
+    const crossDayFootwearIds = savedEntries.map(de => de.outfit?.footwear?.id).filter(Boolean) as string[];
+
+    const smartPick = (
+      idealPool: ClothingItem[],
+      fallbackPool: ClothingItem[],
+      historyIds: string[],
+      crossDayIds: string[],
+      currentId: string | undefined
+    ): ClothingItem | null => {
+      const excludeAll = new Set([...historyIds.slice(0, EXCLUSION_ROUNDS), ...crossDayIds, currentId].filter(Boolean) as string[]);
+      const excludeCross = new Set([...crossDayIds, currentId].filter(Boolean) as string[]);
+      const excludeHist = new Set([...historyIds.slice(0, EXCLUSION_ROUNDS), currentId].filter(Boolean) as string[]);
+
+      // PHASE A: Try IDEAL Pool (Color/Occasion Matched)
+      let fresh = idealPool.filter(i => !excludeAll.has(i.id));
+      if (fresh.length > 0) return pickRandom(fresh);
+
+      fresh = idealPool.filter(i => !excludeCross.has(i.id));
+      if (fresh.length > 0) return pickRandom(fresh);
+
+      fresh = idealPool.filter(i => !excludeHist.has(i.id));
+      if (fresh.length > 0) return pickRandom(fresh);
+
+      // PHASE B: Try FALLBACK Pool (Entire wardrobe for that type)
+      fresh = fallbackPool.filter(i => !excludeAll.has(i.id));
+      if (fresh.length > 0) return pickRandom(fresh);
+
+      fresh = fallbackPool.filter(i => !excludeCross.has(i.id));
+      if (fresh.length > 0) return pickRandom(fresh);
+
+      fresh = fallbackPool.filter(i => !excludeHist.has(i.id));
+      if (fresh.length > 0) return pickRandom(fresh);
+
+      // PHASE C: Ultimate fallback (tiny wardrobe, just ensure it visibly changes)
+      const notCurrent = idealPool.filter(i => i.id !== currentId);
+      if (notCurrent.length > 0) return pickRandom(notCurrent);
+
+      const notCurrentFall = fallbackPool.filter(i => i.id !== currentId);
+      if (notCurrentFall.length > 0) return pickRandom(notCurrentFall);
+
+      return pickRandom(idealPool) || pickRandom(fallbackPool);
+    };
+
+    let idealTops = filterByOccasion(items.filter(i => topTypes.includes(i.type)));
+    let fallbackTops = items.filter(i => topTypes.includes(i.type));
+    if (idealTops.length === 0) idealTops = fallbackTops;
+    const newTop = smartPick(idealTops, fallbackTops, history.top, crossDayTopIds, currentOutfit.top?.id);
 
     const isFullDressTop = newTop && (newTop.type === 'saree' || newTop.type === 'frock');
     let newBottom: ClothingItem | null = null;
     if (!isFullDressTop) {
-      let bottoms = filterByOccasion(items.filter(i => i.type === 'bottom'));
+      let idealBottoms = filterByOccasion(items.filter(i => i.type === 'bottom'));
+      let fallbackBottoms = items.filter(i => i.type === 'bottom');
+      if (idealBottoms.length === 0) idealBottoms = fallbackBottoms;
+      
       const topColorName = newTop?.colorName || '';
       const compatColors = COLOR_COMBINATIONS[topColorName] || [];
       if (compatColors.length > 0) {
-        const colorMatched = bottoms.filter(b => compatColors.includes(b.colorName));
-        if (colorMatched.length > 0) bottoms = colorMatched;
+        const colorMatched = idealBottoms.filter(b => compatColors.includes(b.colorName));
+        if (colorMatched.length > 0) idealBottoms = colorMatched;
       }
-      const availBottoms = bottoms.filter(i => !history.bottom.includes(i.id));
-      const bottomPool = availBottoms.length > 0 ? availBottoms : bottoms;
-      newBottom = pickRandom(bottomPool);
+      newBottom = smartPick(idealBottoms, fallbackBottoms, history.bottom, crossDayBottomIds, currentOutfit.bottom?.id);
     }
 
-    let footwears = filterByOccasion(items.filter(i => i.type === 'footwear'));
-    const availFootwears = footwears.filter(i => !history.footwear.includes(i.id));
-    const footwearPool = availFootwears.length > 0 ? availFootwears : footwears;
-    const newFootwear = pickRandom(footwearPool);
+    let idealFootwears = filterByOccasion(items.filter(i => i.type === 'footwear'));
+    let fallbackFootwears = items.filter(i => i.type === 'footwear');
+    if (idealFootwears.length === 0) idealFootwears = fallbackFootwears;
+    const newFootwear = smartPick(idealFootwears, fallbackFootwears, history.footwear, crossDayFootwearIds, currentOutfit.footwear?.id);
 
+    // Update history window (cap at EXCLUSION_ROUNDS per slot)
     setHistory(prev => ({
-      top: [newTop?.id, ...prev.top].filter(Boolean).slice(0, 2) as string[],
-      bottom: [newBottom?.id, ...prev.bottom].filter(Boolean).slice(0, 2) as string[],
-      footwear: [newFootwear?.id, ...prev.footwear].filter(Boolean).slice(0, 2) as string[],
+      top: [newTop?.id, ...prev.top].filter(Boolean).slice(0, EXCLUSION_ROUNDS) as string[],
+      bottom: [newBottom?.id, ...prev.bottom].filter(Boolean).slice(0, EXCLUSION_ROUNDS) as string[],
+      footwear: [newFootwear?.id, ...prev.footwear].filter(Boolean).slice(0, EXCLUSION_ROUNDS) as string[],
     }));
 
     const newOutfit: Outfit = { top: newTop, bottom: newBottom, footwear: newFootwear };
 
-    // Run animation, then update boxes immediately (optimistic) and save to server
     setTimeout(() => {
       setCurrentOutfit(newOutfit);
       setIsSpinning(false);
       setShowReminder(true);
       setHasGenerated(true);
-      // Reset try-on when new outfit is generated
       setTryOnImageUrl(null);
       setTryOnError(null);
 
@@ -500,16 +545,18 @@ export function RandomizerPage() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="rounded-2xl overflow-hidden bg-white/5 border border-white/20 backdrop-blur-sm"
+                      className="rounded-2xl overflow-hidden bg-white/5 border border-white/20 backdrop-blur-sm mx-auto"
+                      style={{ maxWidth: '300px' }}
                     >
                       {/* Dressed avatar */}
                       <div className="relative">
                         <img
                           src={tryOnImageUrl}
                           alt="Virtual Try-On Avatar"
-                          className="w-full object-contain max-h-[600px]"
+                          className="w-full object-cover"
+                          style={{ height: '400px' }}
                         />
-                        <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm text-xs font-semibold text-white/80">
+                        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-xs font-semibold text-white/80">
                           ✨ AI Try-On
                         </div>
                       </div>
@@ -521,21 +568,6 @@ export function RandomizerPage() {
                         </div>
                       )}
 
-                      {/* Footwear display */}
-                      {currentOutfit.footwear && (
-                        <div className="border-t border-white/10 p-4">
-                          <p className="text-xs opacity-50 uppercase tracking-widest mb-3 text-center">Footwear</p>
-                          <div className="flex justify-center">
-                            <div className="w-48 h-48 rounded-xl overflow-hidden bg-white/10 border border-white/20">
-                              <img
-                                src={currentOutfit.footwear.image}
-                                alt="Footwear"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
 
                       {/* Re-generate button */}
                       <div className="border-t border-white/10 p-4 flex justify-center">
