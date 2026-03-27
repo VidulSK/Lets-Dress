@@ -317,10 +317,30 @@ app.post('/api/tryon', requireAuth, async (req, res) => {
     }
 
     try {
-      // Automatically uses GOOGLE_APPLICATION_CREDENTIALS from the environment
-      const auth = new GoogleAuth({
+      let authOptions = {
         scopes: ['https://www.googleapis.com/auth/cloud-platform']
-      });
+      };
+
+      // In production/deployment, reading from a local C:\ file path fails.
+      // We check for direct JSON injection via environment variables first.
+      if (process.env.GCP_CREDENTIALS_BASE64) {
+        try {
+          const jsonStr = Buffer.from(process.env.GCP_CREDENTIALS_BASE64, 'base64').toString('utf8');
+          authOptions.credentials = JSON.parse(jsonStr);
+        } catch (e) {
+          throw new Error("Failed to parse GCP_CREDENTIALS_BASE64. Ensure it is valid base64 encoded JSON.");
+        }
+      } else if (process.env.GCP_SERVICE_ACCOUNT_JSON) {
+        try {
+          authOptions.credentials = JSON.parse(process.env.GCP_SERVICE_ACCOUNT_JSON);
+        } catch (e) {
+          throw new Error("Failed to parse GCP_SERVICE_ACCOUNT_JSON. Ensure it is valid JSON without broken formatting.");
+        }
+      }
+      // If neither is provided, google-auth-library automatically falls back to 
+      // reading the file path specified in GOOGLE_APPLICATION_CREDENTIALS.
+
+      const auth = new GoogleAuth(authOptions);
       const client = await auth.getClient();
       const token = await client.getAccessToken();
 
