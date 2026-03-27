@@ -5,6 +5,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { Client } from '@gradio/client';
 import { db } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +24,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/avatars', express.static(path.join(__dirname, '../public/avatars')));
 
 // Multer setup for image uploads
 const storage = multer.diskStorage({
@@ -255,7 +257,112 @@ app.delete('/api/events', requireAuth, (req, res) => {
   });
 });
 
-// In production, serve the Vite build and handle SPA routing
+// --- AVATAR ROUTE ---
+// Returns the path of the correct base avatar PNG based on gender + skinUndertone
+app.get('/api/avatar', requireAuth, (req, res) => {
+  db.get(`SELECT gender, skinUndertone FROM users WHERE id = ?`, [req.userId], (err, row) => {
+    if (err || !row) return res.status(500).json({ error: 'User not found' });
+    const gender = (row.gender || 'male').toLowerCase();
+    const undertone = (row.skinUndertone || 'neutral').toLowerCase();
+    // Map undertone to one of: warm | cool | neutral
+    let tone = 'neutral';
+    if (undertone.includes('warm')) tone = 'warm';
+    else if (undertone.includes('cool')) tone = 'cool';
+    const avatarPath = `/avatars/${gender}-${tone}.png`;
+    res.json({ avatarPath });
+  });
+});
+
+// --- VIRTUAL TRY-ON PROXY ROUTE ---
+// Calls Kolors or IDM-VTON HuggingFace Space via @gradio/client
+// Body: { garmentImageUrl: string }  (server-relative path like /uploads/xxx.jpg)
+app.post('/api/tryon', requireAuth, async (req, res) => {
+  const { garmentImageUrl } = req.body;
+  if (!garmentImageUrl) return res.status(400).json({ error: 'garmentImageUrl is required' });
+
+  try {
+    // Resolve avatar for this user
+    const user = await new Promise((resolve, reject) => {
+      db.get(`SELECT gender, skinUndertone FROM users WHERE id = ?`, [req.userId], (err, row) => {
+        if (err || !row) reject(new Error('User not found'));
+        else resolve(row);
+      });
+    });
+
+    const gender = (user.gender || 'male').toLowerCase();
+    const undertone = (user.skinUndertone || 'neutral').toLowerCase();
+    let tone = 'neutral';
+    if (undertone.includes('warm')) tone = 'warm';
+    else if (undertone.includes('cool')) tone = 'cool';
+
+    // Load avatar PNG as a Blob
+    const avatarFilePath = path.join(__dirname, '../public/avatars', `${gender}-${tone}.png`);
+    const avatarBuffer = fs.readFileSync(avatarFilePath);
+    const avatarBlob = new Blob([avatarBuffer], { type: 'image/png' });
+
+    // Load garment image as a Blob
+    let garmentBuffer;
+    if (garmentImageUrl.startsWith('/uploads/')) {
+      garmentBuffer = fs.readFileSync(path.join(__dirname, garmentImageUrl));
+    } else {
+      // Fetch from absolute URL
+      const garmentRes = await fetch(garmentImageUrl);
+      garmentBuffer = Buffer.from(await garmentRes.arrayBuffer());
+    }
+    const garmentBlob = new Blob([garmentBuffer], { type: 'image/jpeg' });
+
+    // Try Kolors first, then fall back to IDM-VTON
+    let resultImageUrl = null;
+    const spaces = ['Kwai-Kolors/Kolors-Virtual-Try-On', 'yisol/IDM-VTON'];
+
+    for (const spaceName of spaces) {
+      try {
+        const client = await Client.connect(spaceName, { hf_token: process.env.HF_TOKEN || undefined });
+        const result = await client.predict('/tryon', {
+          dict: { background: avatarBlob, layers: [], composite: null },
+          garm_img: garmentBlob,
+          garment_des: 'clothing item',
+          is_checked: true,
+          is_checked_crop: false,
+          denoise_steps: 30,
+          seed: 42,
+        });
+        const data = result?.data;
+        // Kolors returns an image in data[0] or data[0].url
+        if (data && data[0]) {
+          const imgData = data[0];
+          if (typeof imgData === 'string') resultImageUrl = imgData;
+          else if (imgData?.url) resultImageUrl = imgData.url;
+          else if (imgData?.path) resultImageUrl = imgData.path;
+        }
+        if (resultImageUrl) break;
+      } catch (spaceErr) {
+        console.error(`Try-on space ${spaceName} failed:`, spaceErr?.message || spaceErr);
+        // try next space
+      }
+    }
+
+    if (!resultImageUrl) {
+      return res.status(503).json({ error: 'Virtual try-on service is currently unavailable. Please try again later.' });
+    }
+
+    // If result is a URL, we proxy it as base64 so the browser can display it
+    if (resultImageUrl.startsWith('http')) {
+      const imgRes = await fetch(resultImageUrl);
+      const imgBuf = Buffer.from(await imgRes.arrayBuffer());
+      const b64 = imgBuf.toString('base64');
+      const mime = imgRes.headers.get('content-type') || 'image/png';
+      return res.json({ imageDataUrl: `data:${mime};base64,${b64}` });
+    }
+
+    res.json({ imageDataUrl: resultImageUrl });
+  } catch (err) {
+    console.error('Try-on error:', err);
+    res.status(500).json({ error: 'Try-on failed: ' + (err?.message || 'Unknown error') });
+  }
+});
+
+
 if (isProd) {
   const distPath = path.join(__dirname, '../dist'); // Ensure this is defined
   app.use(express.static(distPath)); // This serves your CSS/JS files

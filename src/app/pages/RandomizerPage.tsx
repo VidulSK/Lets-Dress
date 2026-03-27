@@ -123,6 +123,9 @@ export function RandomizerPage() {
   const [history, setHistory] = useState<{ top: string[]; bottom: string[]; footwear: string[] }>({ top: [], bottom: [], footwear: [] });
   const [showReminder, setShowReminder] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [tryOnImageUrl, setTryOnImageUrl] = useState<string | null>(null);
+  const [isTryingOn, setIsTryingOn] = useState(false);
+  const [tryOnError, setTryOnError] = useState<string | null>(null);
 
   const userGender = user?.gender || 'male';
   const isFemale = userGender === 'female';
@@ -270,6 +273,9 @@ export function RandomizerPage() {
       setIsSpinning(false);
       setShowReminder(true);
       setHasGenerated(true);
+      // Reset try-on when new outfit is generated
+      setTryOnImageUrl(null);
+      setTryOnError(null);
 
       // Optimistic update — show previews in boxes right away, don't wait for server
       setDayEntries(prev =>
@@ -300,9 +306,33 @@ export function RandomizerPage() {
         setDayEntries(prev => prev.map(de => de.dateStr === dateStr ? { ...de, outfit: null } : de));
         if (tickedDays.has(dateStr)) {
           setCurrentOutfit({ top: null, bottom: null, footwear: null });
+          setTryOnImageUrl(null);
+          setTryOnError(null);
         }
       }
     } catch (e) { console.error(e); }
+  };
+
+  const generateTryOn = async () => {
+    const garmentUrl = currentOutfit.top?.image;
+    if (!garmentUrl) return;
+    setIsTryingOn(true);
+    setTryOnError(null);
+    setTryOnImageUrl(null);
+    try {
+      const res = await fetch('/api/tryon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ garmentImageUrl: garmentUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Try-on failed');
+      setTryOnImageUrl(data.imageDataUrl);
+    } catch (err: any) {
+      setTryOnError(err.message || 'Try-on service unavailable. Please try again.');
+    } finally {
+      setIsTryingOn(false);
+    }
   };
 
   const accessories = items.filter(i => i.type === 'accessories');
@@ -382,6 +412,147 @@ export function RandomizerPage() {
               </motion.div>
             )}
           </div>
+
+          {/* ── Virtual Try-On Avatar Section ───────────────────────────────── */}
+          <AnimatePresence>
+            {hasGenerated && currentOutfit.top && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-12"
+              >
+                <div className="max-w-2xl mx-auto">
+                  <h2 className="text-2xl mb-2 text-center">Virtual Try-On</h2>
+                  <p className="text-center text-sm opacity-60 mb-6">
+                    See how your outfit looks on your avatar
+                  </p>
+
+                  {/* Generate button */}
+                  {!isTryingOn && !tryOnImageUrl && (
+                    <div className="flex justify-center mb-6">
+                      <button
+                        onClick={generateTryOn}
+                        className="flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/30"
+                      >
+                        <span className="text-xl">✨</span>
+                        <span className="text-lg font-semibold">Generate Try-On Avatar</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Loading state */}
+                  {isTryingOn && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex flex-col items-center gap-6 py-10"
+                    >
+                      <div className="relative">
+                        <div className="w-24 h-24 rounded-full border-4 border-purple-500/30 border-t-purple-500 animate-spin" />
+                        <div className="w-24 h-24 rounded-full border-4 border-pink-500/20 border-b-pink-500 animate-spin absolute inset-0" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+                        <div className="absolute inset-0 flex items-center justify-center text-3xl">✨</div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-semibold mb-1">Building your look…</p>
+                        <p className="text-sm opacity-50">This may take 30–90 seconds. AI is working its magic!</p>
+                      </div>
+                      <div className="flex gap-1">
+                        {[0, 1, 2, 3, 4].map(i => (
+                          <motion.div
+                            key={i}
+                            className="w-2 h-2 rounded-full bg-purple-400"
+                            animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
+                            transition={{ repeat: Infinity, duration: 1, delay: i * 0.15 }}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Error state */}
+                  {tryOnError && !isTryingOn && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-center py-6"
+                    >
+                      <p className="text-red-400 mb-4">⚠️ {tryOnError}</p>
+                      <button
+                        onClick={generateTryOn}
+                        className="px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-all text-sm"
+                      >
+                        Try Again
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* Result: Avatar + outfit layers */}
+                  {tryOnImageUrl && !isTryingOn && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="rounded-2xl overflow-hidden bg-white/5 border border-white/20 backdrop-blur-sm"
+                    >
+                      {/* Dressed avatar */}
+                      <div className="relative">
+                        <img
+                          src={tryOnImageUrl}
+                          alt="Virtual Try-On Avatar"
+                          className="w-full object-contain max-h-[600px]"
+                        />
+                        <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm text-xs font-semibold text-white/80">
+                          ✨ AI Try-On
+                        </div>
+                      </div>
+
+                      {/* Bottom garment display */}
+                      {currentOutfit.bottom && !isFullDress && (
+                        <div className="border-t border-white/10 p-4">
+                          <p className="text-xs opacity-50 uppercase tracking-widest mb-3 text-center">Bottom</p>
+                          <div className="flex justify-center">
+                            <div className="w-48 h-48 rounded-xl overflow-hidden bg-white/10 border border-white/20">
+                              <img
+                                src={currentOutfit.bottom.image}
+                                alt="Bottom garment"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Footwear display */}
+                      {currentOutfit.footwear && (
+                        <div className="border-t border-white/10 p-4">
+                          <p className="text-xs opacity-50 uppercase tracking-widest mb-3 text-center">Footwear</p>
+                          <div className="flex justify-center">
+                            <div className="w-48 h-48 rounded-xl overflow-hidden bg-white/10 border border-white/20">
+                              <img
+                                src={currentOutfit.footwear.image}
+                                alt="Footwear"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Re-generate button */}
+                      <div className="border-t border-white/10 p-4 flex justify-center">
+                        <button
+                          onClick={generateTryOn}
+                          className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-all text-sm"
+                        >
+                          <span>🔄</span> Regenerate
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* 7-Day Strip */}
           <div>

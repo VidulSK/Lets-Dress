@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Camera, X, Pipette } from 'lucide-react';
-import chroma from 'chroma-js';
+import { Upload, Camera, X, Pipette, Loader2 } from 'lucide-react';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
-import { getClosestColorName } from '../utils/colorDetection';
+import { getColorNameFromApi } from '../utils/colorDetection';
 
 interface ClothingItem {
   id: string;
@@ -92,8 +91,9 @@ export function WardrobePage() {
   // Color picker state — pin is expressed as 0..1 ratios relative to preview image
   const [pinPos, setPinPos] = useState({ xRatio: 0.5, yRatio: 0.5 });
   const [pickedColor, setPickedColor] = useState('#808080');
-  const [pickedColorName, setPickedColorName] = useState('gray');
+  const [pickedColorName, setPickedColorName] = useState('grey');
   const [isDraggingPin, setIsDraggingPin] = useState(false);
+  const [isColorLoading, setIsColorLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -107,13 +107,17 @@ export function WardrobePage() {
   const accessoryOptions = userGender === 'female' ? FEMALE_ACCESSORIES : MALE_ACCESSORIES;
   const categories = userGender === 'female' ? FEMALE_CATEGORIES : MALE_CATEGORIES;
 
-  // Sample image color at the current pin ratio position
+  // Sample image color at the current pin ratio position, then call Color API
   const sampleFromImage = useCallback((xRatio: number, yRatio: number) => {
     const img = previewImgRef.current;
     if (!img || !img.complete) return;
     const col = sampleImageColor(img, xRatio, yRatio);
     setPickedColor(col);
-    setPickedColorName(getClosestColorName(col));
+    setIsColorLoading(true);
+    getColorNameFromApi(col).then(name => {
+      setPickedColorName(name);
+      setIsColorLoading(false);
+    }).catch(() => setIsColorLoading(false));
   }, []);
 
   // Initialize default color pin (will update on image load)
@@ -125,7 +129,8 @@ export function WardrobePage() {
       const imageUrl = e.target?.result as string;
       setPreviewImage(imageUrl);
       setPickedColor('#808080');
-      setPickedColorName('gray');
+      setPickedColorName('grey');
+      setIsColorLoading(false);
       setPinPos({ xRatio: 0.5, yRatio: 0.5 });
     };
     reader.readAsDataURL(file);
@@ -182,7 +187,8 @@ export function WardrobePage() {
     setShowUploadModal(true);
     setPreviewImage(null);
     setPickedColor('#808080');
-    setPickedColorName('gray');
+    setPickedColorName('grey');
+    setIsColorLoading(false);
     setType('top');
     setAccessoryType('');
     setOccasions([]);
@@ -453,12 +459,24 @@ export function WardrobePage() {
                     </div>
                     {/* Color result row */}
                     <div className="flex items-center gap-4 mt-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg flex-shrink-0" style={{ backgroundColor: pickedColor }} />
+                      <div className="w-10 h-10 rounded-full border-2 border-white shadow-lg flex-shrink-0 relative" style={{ backgroundColor: pickedColor }}>
+                        {isColorLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/30">
+                            <Loader2 className="w-4 h-4 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
                       <div className="flex flex-col">
                         <span className="text-xs opacity-70 uppercase tracking-widest font-semibold mb-0.5">Detected Color</span>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xl font-bold capitalize text-purple-400">{pickedColorName}</span>
-                          <span className="text-sm opacity-50 font-mono">{pickedColor}</span>
+                          {isColorLoading ? (
+                            <span className="text-sm opacity-50">Detecting…</span>
+                          ) : (
+                            <>
+                              <span className="text-xl font-bold capitalize text-purple-400">{pickedColorName}</span>
+                              <span className="text-sm opacity-50 font-mono">{pickedColor}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
