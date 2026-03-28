@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, TrendingUp, Sparkles, ArrowRight, ChevronDown } from 'lucide-react';
+import { Clock, TrendingUp, Sparkles, ArrowRight, ChevronDown, Play } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -113,7 +113,7 @@ export function HomePage() {
       {/* ── Hero Section ──────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
 
-        {/* Hero content — sits above fixed orbs via z-index */}
+        {/* Hero content */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -128,7 +128,7 @@ export function HomePage() {
             className="inline-flex items-center gap-2 pill-badge text-violet-700 dark:text-violet-300 mb-6"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>{isAuthenticated ? `Welcome back, ${user?.username}!` : 'Elevate Your Style'}</span>
+            <span className="text-sm font-semibold">{isAuthenticated ? `Welcome back, ${user?.username}!` : 'Elevate Your Style'}</span>
           </motion.div>
 
           {/* Headline */}
@@ -136,7 +136,7 @@ export function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.8 }}
-            className="text-5xl sm:text-7xl md:text-8xl mb-5 font-black tracking-tight leading-none gradient-text pb-2"
+            className="text-6xl sm:text-7xl md:text-8xl mb-6 font-black tracking-tight leading-none gradient-text pb-2"
           >
             Your Digital<br />Wardrobe
           </motion.h1>
@@ -146,12 +146,12 @@ export function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.55, duration: 0.8 }}
-            className="text-base sm:text-lg md:text-xl mb-10 text-muted-foreground font-normal max-w-xl mx-auto leading-relaxed"
+            className="text-lg sm:text-xl md:text-2xl mb-10 text-muted-foreground font-normal max-w-xl mx-auto leading-relaxed"
           >
             Never waste another morning deciding what to wear. Curate, randomize, and plan your outfits — beautifully.
           </motion.p>
 
-          {/* CTAs — centered on ALL screen sizes */}
+          {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -172,6 +172,14 @@ export function HomePage() {
               Learn More
               <ChevronDown className="w-4 h-4" />
             </button>
+            {/* Watch Video button */}
+            <a
+              href="/video"
+              className="flex items-center justify-center gap-2 w-full max-w-xs sm:w-auto px-8 py-3.5 rounded-full text-base font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              Watch Video
+            </a>
           </motion.div>
         </motion.div>
       </section>
@@ -190,19 +198,17 @@ export function HomePage() {
               <Clock className="w-7 h-7 text-violet-600 dark:text-violet-400" />
             </div>
 
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-6">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6">
               <span className="gradient-text">Our Story</span>
             </h2>
 
-            <p className="text-lg sm:text-xl font-semibold text-foreground mb-4 leading-snug">
-              Every morning, millions of people lose precious time to a wardrobe decision.
+            <p className="text-xl sm:text-2xl font-semibold text-foreground mb-4 leading-snug">
+              Every morning, millions of people lose precious time deciding what to wear.
             </p>
 
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto">
-              We built <strong className="text-foreground font-semibold">Let's Dress</strong> to fix that.
-              Our mission is simple — give you back your mornings by making outfit selection effortless,
-              intelligent, and even fun. With smart suggestions and personalized outfit planning,
-              you'll spend less time in front of your closet and more time living.
+            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto">
+              <strong className="text-foreground font-semibold">Let's Dress</strong> gives you back those mornings —
+              smart outfit suggestions, personalized planning, and a wardrobe that just <em>works</em>.
             </p>
 
             <div className="flex flex-wrap justify-center gap-3 mt-8">
@@ -211,9 +217,9 @@ export function HomePage() {
                 { value: '100%', label: 'your style' },
                 { value: '∞', label: 'combinations' },
               ].map(stat => (
-                <div key={stat.label} className="glass-card px-5 py-3 flex flex-col items-center min-w-[90px]">
-                  <span className="text-xl font-black gradient-text">{stat.value}</span>
-                  <span className="text-xs text-muted-foreground font-medium mt-0.5">{stat.label}</span>
+                <div key={stat.label} className="glass-card px-6 py-4 flex flex-col items-center min-w-[100px]">
+                  <span className="text-2xl font-black gradient-text">{stat.value}</span>
+                  <span className="text-sm text-muted-foreground font-medium mt-0.5">{stat.label}</span>
                 </div>
               ))}
             </div>
@@ -234,10 +240,10 @@ export function HomePage() {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-pink-100 dark:bg-pink-500/15 border border-pink-200 dark:border-pink-500/25 mb-8">
               <TrendingUp className="w-7 h-7 text-pink-600 dark:text-pink-400" />
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-4">
               Trends &amp; <span className="gradient-text">Styles</span>
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
               From timeless old money aesthetics to modern streetwear — curate a wardrobe that is unmistakably <em>you</em>.
             </p>
           </motion.div>
@@ -264,8 +270,8 @@ export function HomePage() {
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">{card.title}</h3>
-                  <p className="text-white/75 text-sm sm:text-base">{card.sub}</p>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1">{card.title}</h3>
+                  <p className="text-white/75 text-base sm:text-lg">{card.sub}</p>
                 </div>
               </motion.div>
             ))}
@@ -286,16 +292,17 @@ export function HomePage() {
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/25 mb-8">
               <Sparkles className="w-7 h-7 text-amber-600 dark:text-amber-400" />
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight mb-4">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight mb-4">
               Why <span className="gradient-text">Let's Dress?</span>
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-md mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-md mx-auto">
               No more thinking about what to wear — ever.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
-            {perks.map((perk, index) => (
+          {/* First 3 perks in normal grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto mb-4 sm:mb-6">
+            {perks.slice(0, 3).map((perk, index) => (
               <motion.div
                 key={perk.title}
                 initial={{ opacity: 0, y: 24 }}
@@ -309,8 +316,31 @@ export function HomePage() {
                   {perk.emoji}
                 </div>
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">{perk.title}</h3>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{perk.description}</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">{perk.title}</h3>
+                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">{perk.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Last 2 perks — centered row */}
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-5xl mx-auto">
+            {perks.slice(3).map((perk, index) => (
+              <motion.div
+                key={perk.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: (index + 3) * 0.08, type: 'spring', damping: 22 }}
+                viewport={{ once: true, margin: '-40px' }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                className="glass-card p-6 sm:p-7 flex flex-col gap-4 transition-shadow duration-300 w-full sm:max-w-sm"
+              >
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/15 dark:to-pink-500/15 border border-violet-200/50 dark:border-violet-500/20 flex items-center justify-center text-2xl sm:text-3xl shrink-0 shadow-sm">
+                  {perk.emoji}
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">{perk.title}</h3>
+                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">{perk.description}</p>
                 </div>
               </motion.div>
             ))}

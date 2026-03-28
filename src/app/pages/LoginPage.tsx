@@ -13,7 +13,6 @@ export function LoginPage() {
   const [searchParams] = useSearchParams();
   const { login, signup } = useAuth();
 
-  // Determine initial tab from ?tab= query param, default to signin
   const initialTab: Tab = (searchParams.get('tab') === 'signup') ? 'signup' : 'signin';
   const [tab, setTab] = useState<Tab>(initialTab);
 
@@ -51,66 +50,41 @@ export function LoginPage() {
   };
 
   const inputClass =
-    'w-full pl-10 pr-3 py-3 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all text-sm';
+    'w-full pl-10 pr-3 py-3.5 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all text-base';
   const selectClass = (val: string) =>
-    `w-full px-3.5 py-3 rounded-xl bg-muted border border-border focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all appearance-none text-sm ${val ? 'text-foreground' : 'text-muted-foreground'}`;
+    `w-full px-3.5 py-3.5 rounded-xl bg-muted border border-border focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all appearance-none text-base ${val ? 'text-foreground' : 'text-muted-foreground'}`;
   const iconClass =
     'absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-violet-600 dark:group-focus-within:text-violet-400 transition-colors';
 
   return (
-    <div className="min-h-screen flex bg-transparent transition-colors duration-500">
+    /*
+     * Full-screen, no scroll.
+     * On mobile: flex-col — form on top, image below.
+     * On lg+: flex-row — image left (5/12), form right (7/12).
+     */
+    <div className="h-screen flex flex-col lg:flex-row overflow-hidden transition-colors duration-500">
 
-      {/* Left decorative panel */}
-      <div className="hidden lg:flex lg:w-5/12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br dark:from-violet-900/60 dark:to-black/80 from-violet-200/50 to-white/60 z-10" />
-        <img
-          src={tab === 'signup' ? 'images/signUp.jpg' : 'images/signIn.jpg'}
-          alt="Fashion"
-          className="absolute inset-0 w-full h-full object-cover scale-105 transition-all duration-700"
-        />
-        <div className="relative z-20 flex flex-col justify-end p-12 xl:p-16 h-full text-white">
-          <motion.div
-            key={tab}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2 className="text-4xl xl:text-5xl font-black mb-4 leading-tight text-white drop-shadow-lg">
-              {tab === 'signin'
-                ? <>Welcome Back<br />to Your Wardrobe</>
-                : <>Curate Your<br />Signature Look</>
-              }
-            </h2>
-            <p className="text-base text-white/80 max-w-sm font-medium leading-relaxed">
-              {tab === 'signin'
-                ? 'Access your smartly curated outfits and seamlessly plan your week ahead.'
-                : 'Join thousands of users organizing their wardrobes, generating outfits, and saving time every morning.'
-              }
-            </p>
-          </motion.div>
-        </div>
-      </div>
+      {/* ── Form panel (shown first on mobile, left on desktop) ── */}
+      <div className="flex-1 lg:flex-none lg:w-7/12 flex flex-col items-center justify-center p-6 sm:p-10 relative overflow-y-auto lg:overflow-hidden">
 
-      {/* Right — form panel */}
-      <div className="w-full lg:w-7/12 flex items-start justify-center p-6 sm:p-8 relative overflow-hidden overflow-y-auto">
-        {/* Orbs */}
-        <div className="orb orb-1 absolute top-[-20%] right-[-10%] w-[40vw] h-[40vw] max-w-xs pointer-events-none" />
-        <div className="orb orb-2 absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] max-w-xs pointer-events-none" />
+        {/* Background orbs — no tint, just the floating glows */}
+        <div className="orb orb-1 fixed top-[-20%] right-[-10%] w-[40vw] h-[40vw] max-w-xs pointer-events-none" />
+        <div className="orb orb-2 fixed bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] max-w-xs pointer-events-none" />
 
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-lg relative z-10 py-10 sm:py-14"
+          className="w-full max-w-lg relative z-10 py-6"
         >
-          {/* Logo */}
-          <a href="/" className="inline-flex items-center gap-2.5 mb-10 group">
+          {/* Logo — centered */}
+          <a href="/" className="flex flex-col items-center gap-2 mb-8 group">
             <img
               src="images/logo.png"
               alt="Logo"
-              className="w-9 h-9 rounded-full object-contain p-1 bg-white/90 dark:bg-white/10 border border-violet-200 dark:border-violet-500/30 group-hover:scale-110 transition-transform"
+              className="w-14 h-14 rounded-full object-contain p-1.5 bg-white/90 dark:bg-white/10 border border-violet-200 dark:border-violet-500/30 group-hover:scale-110 transition-transform shadow-md"
             />
-            <span className="text-xl font-bold gradient-text">Let's Dress</span>
+            <span className="text-2xl font-bold gradient-text">Let's Dress</span>
           </a>
 
           {/* Tab switcher */}
@@ -151,8 +125,8 @@ export function LoginPage() {
                 exit={{ opacity: 0, x: 16 }}
                 transition={{ duration: 0.3 }}
               >
-                <h1 className="text-3xl sm:text-4xl font-black mb-1.5 tracking-tight">Sign In</h1>
-                <p className="text-muted-foreground text-sm mb-7">Enter your credentials to access your account</p>
+                <h1 className="text-4xl sm:text-5xl font-black mb-2 tracking-tight">Sign In</h1>
+                <p className="text-muted-foreground text-base mb-7">Enter your credentials to access your account</p>
 
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="relative group">
@@ -205,8 +179,8 @@ export function LoginPage() {
                 exit={{ opacity: 0, x: -16 }}
                 transition={{ duration: 0.3 }}
               >
-                <h1 className="text-3xl sm:text-4xl font-black mb-1.5 tracking-tight">Create Account</h1>
-                <p className="text-muted-foreground text-sm mb-7">Personalize your wardrobe experience</p>
+                <h1 className="text-4xl sm:text-5xl font-black mb-2 tracking-tight">Create Account</h1>
+                <p className="text-muted-foreground text-base mb-7">Personalize your wardrobe experience</p>
 
                 <form onSubmit={handleSignUp} className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -288,6 +262,42 @@ export function LoginPage() {
             )}
           </AnimatePresence>
         </motion.div>
+      </div>
+
+      {/* ── Decorative image panel ────────────────────────────────
+           Desktop: fixed left side (5/12 width, shown as right panel reordered)
+           Mobile: shown below the form as a short banner
+      ─────────────────────────────────────────────────────────── */}
+      <div className="lg:order-first h-48 lg:h-auto flex-shrink-0 lg:w-5/12 relative overflow-hidden">
+        {/* Only a very subtle gradient on the image — no opaque tint */}
+        <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-black/50 via-transparent to-transparent z-10" />
+        <img
+          src={tab === 'signup' ? 'images/signUp.jpg' : 'images/signIn.jpg'}
+          alt="Fashion"
+          className="absolute inset-0 w-full h-full object-cover scale-105 transition-all duration-700"
+        />
+        {/* Text overlay — only visible on desktop */}
+        <div className="relative z-20 hidden lg:flex flex-col justify-end p-12 xl:p-16 h-full text-white">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-4xl xl:text-5xl font-black mb-4 leading-tight text-white drop-shadow-lg">
+              {tab === 'signin'
+                ? <>Welcome Back<br />to Your Wardrobe</>
+                : <>Curate Your<br />Signature Look</>
+              }
+            </h2>
+            <p className="text-base text-white/80 max-w-sm font-medium leading-relaxed">
+              {tab === 'signin'
+                ? 'Access your smartly curated outfits and seamlessly plan your week ahead.'
+                : 'Join thousands of users organizing their wardrobes, generating outfits, and saving time every morning.'
+              }
+            </p>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

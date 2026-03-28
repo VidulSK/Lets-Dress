@@ -31,7 +31,7 @@ export function AppNavbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 frosted-nav">
-        <div className="section-container py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-3.5 sm:py-5">
           <div className="flex items-center justify-between gap-4">
 
             {/* Left side */}
@@ -40,7 +40,7 @@ export function AppNavbar() {
               {/* Hamburger — visible only below 860px */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="max-[860px]:flex hidden items-center justify-center w-9 h-9 rounded-full bg-muted hover:bg-accent border border-border transition-all hover:scale-105"
+                className="max-[860px]:flex hidden items-center justify-center w-10 h-10 rounded-full bg-muted hover:bg-accent border border-border transition-all hover:scale-105"
                 aria-label="Open navigation menu"
               >
                 <Menu className="w-4 h-4 text-foreground" />
@@ -66,7 +66,7 @@ export function AppNavbar() {
                     <Link
                       key={link.to}
                       to={link.to}
-                      className={`relative flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium transition-all duration-200 group
+                      className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-[0.9rem] font-semibold transition-all duration-200 group
                         ${active
                           ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 shadow-sm'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -90,12 +90,12 @@ export function AppNavbar() {
             </div>
 
             {/* Right side */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {/* Theme toggle */}
               <motion.button
                 onClick={toggleTheme}
                 whileTap={{ scale: 0.9, rotate: 15 }}
-                className="p-2 sm:p-2.5 rounded-full bg-muted hover:bg-accent border border-border transition-all duration-300 flex items-center justify-center"
+                className="p-2.5 rounded-full bg-muted hover:bg-accent border border-border transition-all duration-300 flex items-center justify-center"
                 aria-label="Toggle theme"
               >
                 <motion.div
@@ -114,9 +114,9 @@ export function AppNavbar() {
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-3 py-2 sm:px-4 rounded-full text-sm font-semibold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/20 transition-all hover:scale-105 active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 sm:px-5 rounded-full text-sm font-semibold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/20 transition-all hover:scale-105 active:scale-95"
               >
-                <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <LogOut className="w-4 h-4" />
                 <span className="max-[480px]:hidden">Logout</span>
               </button>
             </div>

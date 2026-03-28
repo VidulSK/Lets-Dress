@@ -28,7 +28,7 @@ export function Navbar({ showAuth = false, onMenuClick, menuOpen = false }: Navb
               <motion.button
                 onClick={onMenuClick}
                 whileTap={{ scale: 0.9 }}
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-muted hover:bg-accent border border-border transition-all duration-200 shrink-0"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-muted hover:bg-accent border border-border transition-all duration-200 shrink-0"
                 aria-label="Navigation menu"
               >
                 <AnimatePresence mode="wait">

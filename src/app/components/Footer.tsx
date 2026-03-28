@@ -1,29 +1,30 @@
-import { Heart, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 export function Footer() {
   return (
-    <footer className="relative py-10 px-6 mt-8 overflow-hidden">
+    <footer className="relative py-8 px-6 mt-8 overflow-hidden">
       {/* Subtle top border */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-violet-300/40 dark:via-violet-500/20 to-transparent" />
 
       <div className="section-container">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+        {/* Three-column layout on desktop, stacked on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3 sm:gap-0">
 
-          {/* Brand */}
-          <div className="flex items-center gap-2 font-semibold text-foreground/80">
+          {/* Left — Brand */}
+          <div className="flex items-center gap-2 font-semibold text-foreground/80 justify-center sm:justify-start">
             <Sparkles className="w-4 h-4 text-violet-500" />
             <span>Let's Dress</span>
           </div>
 
-          {/* Love note */}
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground order-last sm:order-none">
-            <span>Made with</span>
-            <Heart className="w-3.5 h-3.5 fill-pink-500 text-pink-500 animate-pulse" />
-            <span>for fashion lovers</span>
+          {/* Center — Copyright */}
+          <div className="flex justify-center">
+            <span className="text-xs text-muted-foreground/60 text-center">
+              © {new Date().getFullYear()} Let's Dress. All rights reserved.
+            </span>
           </div>
 
-          {/* Links */}
-          <div className="flex items-center gap-5 text-sm text-muted-foreground">
+          {/* Right — Links */}
+          <div className="flex items-center gap-5 text-sm text-muted-foreground justify-center sm:justify-end">
             {['Privacy', 'Terms', 'Contact'].map(l => (
               <a
                 key={l}
@@ -34,10 +35,6 @@ export function Footer() {
               </a>
             ))}
           </div>
-        </div>
-
-        <div className="mt-6 text-center text-xs text-muted-foreground/60">
-          © {new Date().getFullYear()} Let's Dress. All rights reserved.
         </div>
       </div>
     </footer>
