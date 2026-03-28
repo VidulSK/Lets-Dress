@@ -217,9 +217,11 @@ export function HomePage() {
                 { value: '100%', label: 'your style' },
                 { value: '∞', label: 'combinations' },
               ].map(stat => (
-                <div key={stat.label} className="glass-card px-6 py-4 flex flex-col items-center min-w-[100px]">
-                  <span className="text-2xl font-black gradient-text">{stat.value}</span>
-                  <span className="text-sm text-muted-foreground font-medium mt-0.5">{stat.label}</span>
+                <div key={stat.label} className="glass-card px-6 py-4 flex flex-col items-center justify-center min-w-[100px]">
+                  <span className={`font-black gradient-text ${stat.value === '∞' ? 'text-5xl leading-[0.8]' : 'text-2xl'}`}>
+                    {stat.value}
+                  </span>
+                  <span className="text-sm text-muted-foreground font-medium mt-1">{stat.label}</span>
                 </div>
               ))}
             </div>

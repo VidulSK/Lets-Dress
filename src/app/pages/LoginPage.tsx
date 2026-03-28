@@ -62,10 +62,10 @@ export function LoginPage() {
      * On mobile: flex-col — form on top, image below.
      * On lg+: flex-row — image left (5/12), form right (7/12).
      */
-    <div className="h-screen flex flex-col lg:flex-row overflow-hidden transition-colors duration-500">
+    <div className="h-screen w-full flex flex-col lg:flex-row overflow-hidden transition-colors duration-500 bg-white dark:bg-background">
 
       {/* ── Form panel (shown first on mobile, left on desktop) ── */}
-      <div className="flex-1 lg:flex-none lg:w-7/12 flex flex-col items-center justify-center p-6 sm:p-10 relative overflow-y-auto lg:overflow-hidden">
+      <div className="flex-1 lg:flex-none lg:w-7/12 flex flex-col items-center justify-center p-6 sm:p-8 relative overflow-hidden">
 
         {/* Background orbs — no tint, just the floating glows */}
         <div className="orb orb-1 fixed top-[-20%] right-[-10%] w-[40vw] h-[40vw] max-w-xs pointer-events-none" />
