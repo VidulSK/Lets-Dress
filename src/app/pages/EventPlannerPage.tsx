@@ -102,31 +102,33 @@ export function EventPlannerPage() {
     <div className="min-h-screen flex flex-col">
       <AppNavbar />
 
-      <div className="flex-1 px-6 py-24">
+      <div className="flex-1 px-4 sm:px-6 py-24">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <Calendar className="w-12 h-12 mx-auto mb-4 opacity-80" />
-            <h1 className="text-4xl mb-2">Event Planner</h1>
-            <p className="opacity-80">Schedule your outfits for special occasions</p>
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-500/25 mb-6">
+              <Calendar className="w-7 h-7 text-violet-600 dark:text-violet-400" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">Event Planner</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">Schedule your outfits for special occasions</p>
           </div>
 
           {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-6 p-4 rounded-xl bg-white/10 backdrop-blur-sm">
-            <button onClick={handlePrevMonth} className="p-2 rounded-full hover:bg-white/20 transition-all">
-              <ChevronLeft className="w-6 h-6" />
+          <div className="glass-card flex items-center justify-between mb-4 p-4 sm:p-5">
+            <button onClick={handlePrevMonth} className="p-2 rounded-full bg-muted hover:bg-accent transition-all">
+              <ChevronLeft className="w-5 h-5" />
             </button>
-            <h2 className="text-2xl">{monthName}</h2>
-            <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-white/20 transition-all">
-              <ChevronRight className="w-6 h-6" />
+            <h2 className="text-lg sm:text-2xl font-bold">{monthName}</h2>
+            <button onClick={handleNextMonth} className="p-2 rounded-full bg-muted hover:bg-accent transition-all">
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
 
           {/* Calendar Grid */}
-          <div className="rounded-xl overflow-hidden bg-white/5 backdrop-blur-sm border border-white/10">
+          <div className="glass-card overflow-hidden">
             {/* Day Headers */}
-            <div className="grid grid-cols-7 border-b border-white/10">
+            <div className="grid grid-cols-7 border-b border-border">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="p-3 text-center text-sm font-semibold opacity-80">{day}</div>
+                <div key={day} className="p-2 sm:p-3 text-center text-xs sm:text-sm font-semibold text-muted-foreground">{day}</div>
               ))}
             </div>
 
@@ -141,28 +143,30 @@ export function EventPlannerPage() {
                 return (
                   <motion.div
                     key={index}
-                    whileHover={day && !isPast ? { scale: 0.98 } : {}}
-                    className={`min-h-24 p-2 border-r border-b border-white/10 transition-all ${
-                      !day ? 'bg-white/5' : ''
-                    } ${isToday ? 'bg-purple-500/20' : ''} ${
-                      isPast ? 'opacity-30 cursor-not-allowed' : day ? 'cursor-pointer hover:bg-white/10' : ''
+                    whileHover={day && !isPast ? { scale: 0.97 } : {}}
+                    className={`min-h-16 sm:min-h-24 p-1.5 sm:p-2 border-r border-b border-border transition-all ${
+                      !day ? 'bg-muted/30' : ''
+                    } ${isToday ? 'bg-violet-100/60 dark:bg-violet-500/15' : ''} ${
+                      isPast ? 'opacity-30 cursor-not-allowed' : day ? 'cursor-pointer hover:bg-muted/60' : ''
                     }`}
                     onClick={() => day && !isPast && handleDateClick(dateStr)}
                   >
                     {day && (
                       <>
-                        <div className={`text-sm mb-1 ${isToday ? 'font-bold text-purple-300' : isPast ? 'text-gray-500' : ''}`}>
+                        <div className={`text-xs sm:text-sm mb-1 font-medium ${
+                          isToday ? 'font-bold text-violet-600 dark:text-violet-400' : isPast ? 'text-muted-foreground' : 'text-foreground'
+                        }`}>
                           {day}
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           {dayEvents.slice(0, 2).map((event, i) => (
-                            <div key={i} className="text-xs px-2 py-1 rounded bg-gradient-to-r from-purple-500/40 to-pink-500/40 truncate">
+                            <div key={i} className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded bg-gradient-to-r from-violet-500/40 to-pink-500/40 truncate font-medium">
                               {event.title}
-                              {event.dressType && <span className="ml-1 opacity-70">· {event.dressType}</span>}
+                              {event.dressType && <span className="ml-1 opacity-70 hidden sm:inline">· {event.dressType}</span>}
                             </div>
                           ))}
                           {dayEvents.length > 2 && (
-                            <div className="text-xs opacity-60 px-2">+{dayEvents.length - 2} more</div>
+                            <div className="text-[10px] sm:text-xs opacity-60 px-1.5">+{dayEvents.length - 2} more</div>
                           )}
                         </div>
                       </>
@@ -179,20 +183,20 @@ export function EventPlannerPage() {
       {showEventModal && selectedDate && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-md"
           onClick={() => setShowEventModal(false)}
         >
           <motion.div
-            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
+            initial={{ scale: 0.94, y: 20 }} animate={{ scale: 1, y: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20"
+            className="w-full max-w-md glass-card p-6 sm:p-7"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl">
+              <h2 className="text-lg sm:text-xl font-bold">
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </h2>
-              <button onClick={() => setShowEventModal(false)} className="p-2 rounded-full hover:bg-white/20 transition-all">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowEventModal(false)} className="p-2 rounded-full bg-muted hover:bg-accent transition-all">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -200,17 +204,17 @@ export function EventPlannerPage() {
             {getEventsForDate(selectedDate).length > 0 && (
               <div className="mb-6 space-y-2 max-h-48 overflow-y-auto">
                 {getEventsForDate(selectedDate).map((event, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 rounded-lg bg-white/10">
+                  <div key={index} className="flex justify-between items-center p-3 rounded-xl bg-muted/50">
                     <div>
-                      <span>{event.title}</span>
+                      <span className="font-medium text-sm">{event.title}</span>
                       {event.dressType && (
-                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-purple-500/30 opacity-80">
+                        <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300">
                           {event.dressType}
                         </span>
                       )}
                     </div>
-                    <button onClick={() => handleDeleteEvent(event.date, event.title)} className="p-1 rounded hover:bg-red-500/20 transition-all">
-                      <X className="w-4 h-4" />
+                    <button onClick={() => handleDeleteEvent(event.date, event.title)} className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-500 transition-all">
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -220,34 +224,34 @@ export function EventPlannerPage() {
             {/* Add New Event */}
             <div className="space-y-4">
               <div>
-                <label className="block mb-2 text-sm opacity-80">Event Title</label>
+                <label className="block mb-2 text-sm font-medium text-muted-foreground">Event Title</label>
                 <input
                   type="text"
                   value={eventTitle}
                   onChange={(e) => setEventTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveEvent()}
                   placeholder="Enter event name..."
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none"
+                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all text-sm"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block mb-2 text-sm opacity-80">Required Dress Type</label>
+                <label className="block mb-2 text-sm font-medium text-muted-foreground">Required Dress Type</label>
                 <select
                   value={eventDressType}
                   onChange={(e) => setEventDressType(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:border-purple-500 focus:outline-none"
+                  className="w-full px-4 py-3 rounded-xl bg-muted border border-border focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all text-sm appearance-none"
                 >
-                  <option value="" className="bg-[#2a1a3e] text-gray-400">Select dress type</option>
+                  <option value="">Select dress type</option>
                   {DRESS_TYPES.map(dt => (
-                    <option key={dt} value={dt} className="bg-[#2a1a3e] text-white">{dt}</option>
+                    <option key={dt} value={dt}>{dt}</option>
                   ))}
                 </select>
               </div>
               <button
                 onClick={handleSaveEvent}
                 disabled={!eventTitle.trim()}
-                className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary w-full justify-center py-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
               >
                 Add Event
               </button>

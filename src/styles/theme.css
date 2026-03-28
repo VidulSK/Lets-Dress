@@ -1,83 +1,139 @@
 @custom-variant dark (&:is(.dark *));
 
+/* ── Light Mode ─────────────────────────────────────────────── */
 :root {
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
+
+  /* Surface palette */
+  --background: #faf8ff;
+  --foreground: #1a1625;
   --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
-  --destructive: #d4183d;
+  --card-foreground: #1a1625;
+  --popover: #ffffff;
+  --popover-foreground: #1a1625;
+
+  /* Brand */
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f0ff;
+  --secondary-foreground: #5b21b6;
+
+  /* Neutrals */
+  --muted: #ede9f8;
+  --muted-foreground: #6b6780;
+  --accent: #e0d9f8;
+  --accent-foreground: #4c1d95;
+
+  /* Status */
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
+
+  /* UI chrome */
+  --border: rgba(124, 58, 237, 0.12);
   --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --input-background: #f3f0ff;
+  --switch-background: #c4b5fd;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
+  --ring: rgba(124, 58, 237, 0.4);
+
+  /* Chart */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* Radius */
+  --radius: 0.75rem;
+
+  /* Sidebar */
+  --sidebar: #faf8ff;
+  --sidebar-foreground: #1a1625;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f0ff;
+  --sidebar-accent-foreground: #4c1d95;
+  --sidebar-border: rgba(124, 58, 237, 0.12);
+  --sidebar-ring: rgba(124, 58, 237, 0.4);
+
+  /* Custom gradient tokens */
+  --bg-gradient: linear-gradient(135deg, #f5f0ff 0%, #fce7f3 40%, #fff7ed 100%);
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-shadow: 0 8px 32px rgba(124, 58, 237, 0.08), 0 1px 3px rgba(0,0,0,0.06);
+  --nav-bg: rgba(250, 248, 255, 0.85);
+  --nav-border: rgba(124, 58, 237, 0.1);
+  --orb-1: rgba(167, 139, 250, 0.35);
+  --orb-2: rgba(249, 168, 212, 0.35);
+  --orb-3: rgba(253, 224, 132, 0.25);
 }
 
+/* ── Dark Mode ──────────────────────────────────────────────── */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  /* Surface palette */
+  --background: #0e0b1a;
+  --foreground: #f0eeff;
+  --card: #16112a;
+  --card-foreground: #f0eeff;
+  --popover: #16112a;
+  --popover-foreground: #f0eeff;
+
+  /* Brand */
+  --primary: #a78bfa;
+  --primary-foreground: #0e0b1a;
+  --secondary: #1e1535;
+  --secondary-foreground: #c4b5fd;
+
+  /* Neutrals */
+  --muted: #1e1535;
+  --muted-foreground: #9d8fc4;
+  --accent: #2a1f48;
+  --accent-foreground: #c4b5fd;
+
+  /* Status */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  /* UI chrome */
+  --border: rgba(167, 139, 250, 0.15);
+  --input: rgba(167, 139, 250, 0.08);
+  --input-background: #1e1535;
+  --switch-background: #4c1d95;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
+  --ring: rgba(167, 139, 250, 0.5);
+
+  /* Chart */
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+
+  /* Sidebar */
+  --sidebar: #13102000;
+  --sidebar-foreground: #f0eeff;
+  --sidebar-primary: #a78bfa;
+  --sidebar-primary-foreground: #0e0b1a;
+  --sidebar-accent: #1e1535;
+  --sidebar-accent-foreground: #c4b5fd;
+  --sidebar-border: rgba(167, 139, 250, 0.15);
+  --sidebar-ring: rgba(167, 139, 250, 0.5);
+
+  /* Custom gradient tokens */
+  --bg-gradient: linear-gradient(135deg, #0e0b1a 0%, #1a0e2e 40%, #1e0e20 70%, #120e1a 100%);
+  --glass-bg: rgba(22, 17, 42, 0.75);
+  --glass-border: rgba(167, 139, 250, 0.18);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0,0,0,0.3);
+  --nav-bg: rgba(14, 11, 26, 0.88);
+  --nav-border: rgba(167, 139, 250, 0.12);
+  --orb-1: rgba(139, 92, 246, 0.22);
+  --orb-2: rgba(236, 72, 153, 0.18);
+  --orb-3: rgba(59, 130, 246, 0.15);
 }
 
+/* ── Tailwind color bridge ──────────────────────────────────── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -119,78 +175,228 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ── Base Layer ─────────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: var(--font-size);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground;
-    transition: background 0.3s ease;
-  }
-  
-  /* Light mode gradient background */
-  [data-theme="light"] body {
-    background: linear-gradient(135deg, #574964 0%, #9F8383 25%, #C8AAAA 75%, #FFDAB3 100%);
+    background: var(--bg-gradient);
     background-attachment: fixed;
-    color: #1a1a1a;
-  }
-  
-  /* Dark mode gradient background */
-  [data-theme="dark"] body {
-    background: linear-gradient(135deg, #210F37 0%, #4F1C51 25%, #A55B4B 75%, #DCA06D 100%);
-    background-attachment: fixed;
-    color: #f5f5f5;
+    min-height: 100vh;
+    transition: background 0.4s ease, color 0.3s ease;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-  */
-
-  html {
-    font-size: var(--font-size);
-  }
-
+  /* Typography */
   h1 {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
   }
 
   h2 {
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
   }
 
   h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
   }
 
   h4 {
-    font-size: var(--text-base);
+    font-size: 1rem;
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
+  p {
+    line-height: 1.7;
+  }
+
   label {
-    font-size: var(--text-base);
+    font-size: 0.875rem;
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
   button {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
     line-height: 1.5;
+    cursor: pointer;
   }
 
-  input {
-    font-size: var(--text-base);
+  input, select, textarea {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: var(--font-size);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+}
+
+/* ── Global Utility Classes ─────────────────────────────────── */
+
+/* Glass card */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 1.25rem;
+}
+
+/* Frosted nav */
+.frosted-nav {
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 60%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .gradient-text {
+  background: linear-gradient(135deg, #c4b5fd 0%, #f9a8d4 60%, #fde68a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Glow pulse */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+/* Float animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Orb blobs — position (fixed/absolute) is set per-element in JSX */
+.orb {
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+  will-change: transform, opacity;
+}
+
+.orb-1 { background: var(--orb-1); animation: glow-pulse 8s ease-in-out infinite; }
+.orb-2 { background: var(--orb-2); animation: glow-pulse 10s ease-in-out infinite 2s; }
+.orb-3 { background: var(--orb-3); animation: glow-pulse 12s ease-in-out infinite 4s; }
+
+/* Premium button */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 100px;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(124, 58, 237, 0.5);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Ghost button */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 100px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--foreground);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-ghost:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* Section wrappers */
+.section-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Pill badge */
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 1rem;
+  border-radius: 100px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px);
+}
+
+/* Mobile responsive helpers */
+@media (max-width: 640px) {
+  .section-container {
+    padding: 0 1rem;
   }
 }

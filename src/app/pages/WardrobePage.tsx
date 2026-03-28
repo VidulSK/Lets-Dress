@@ -292,25 +292,26 @@ export function WardrobePage() {
     <div className="min-h-screen flex flex-col">
       <AppNavbar />
 
-      <div className="flex-1 px-6 py-24">
+      <div className="flex-1 px-4 sm:px-6 py-24">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          {/* Page header */}
+          <div className="glass-card p-5 sm:p-7 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-4xl mb-2">My Wardrobe</h1>
-              <p className="opacity-80">Manage your clothing collection</p>
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-1">My Wardrobe</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Manage your clothing collection</p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={handleUploadClick}
-                className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
+                className="btn-primary flex-1 sm:flex-none text-sm px-5 py-2.5 justify-center"
               >
-                <Upload className="w-5 h-5" />Upload
+                <Upload className="w-4 h-4" />Upload
               </button>
               <button
                 onClick={handleCameraClick}
-                className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/20 hover:bg-white/30 transition-all backdrop-blur-sm"
+                className="btn-ghost flex-1 sm:flex-none text-sm px-5 py-2.5 justify-center"
               >
-                <Camera className="w-5 h-5" />Camera
+                <Camera className="w-4 h-4" />Camera
               </button>
             </div>
           </div>
@@ -318,56 +319,71 @@ export function WardrobePage() {
           {/* Categorised Wardrobe */}
           {items.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
-              <p className="text-xl opacity-60 mb-4">Your wardrobe is empty</p>
-              <p className="opacity-40">Upload or capture your first item to get started</p>
+              <div className="glass-card inline-block px-10 py-12 max-w-sm mx-auto">
+                <div className="text-5xl mb-4">👗</div>
+                <p className="text-lg font-semibold mb-2">Your wardrobe is empty</p>
+                <p className="text-sm text-muted-foreground">Upload or capture your first item to get started</p>
+              </div>
             </motion.div>
           ) : (
-            categories.map((cat, catIdx) => {
-              const catItems = grouped[cat.key] || [];
-              if (catItems.length === 0) return null;
-              return (
-                <div key={cat.key}>
-                  {catIdx > 0 && <hr className="border-white/15 my-6" />}
-                  <h2 className="text-xl font-semibold mb-4 opacity-90">{cat.label}</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    <AnimatePresence>
-                      {catItems.map((item, index) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className="relative group"
-                        >
-                          <div className="aspect-square rounded-xl overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20">
-                            <img src={item.image} alt={`${item.type} item`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                          </div>
-                          <div className="absolute top-3 right-3 flex items-center gap-2">
-                            <div
-                              className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
-                              style={{ backgroundColor: item.color }}
-                              title={item.colorName || item.color}
-                            />
-                            <button
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="p-2 rounded-full bg-red-500/80 hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                          <div className="mt-2 px-2">
-                            <div className="text-sm opacity-80 capitalize">{item.type}</div>
-                            {item.colorName && <div className="text-xs opacity-60 capitalize">{item.colorName}</div>}
-                            {item.accessoryType && <div className="text-xs opacity-50">{item.accessoryType}</div>}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
+            <div className="space-y-10">
+              {categories.map((cat) => {
+                const catItems = grouped[cat.key] || [];
+                if (catItems.length === 0) return null;
+                return (
+                  <div key={cat.key}>
+                    <div className="flex items-center gap-3 mb-5">
+                      <h2 className="text-lg sm:text-xl font-bold tracking-tight">{cat.label}</h2>
+                      <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/20">
+                        {catItems.length}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+                      <AnimatePresence>
+                        {catItems.map((item, index) => (
+                          <motion.div
+                            key={item.id}
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ duration: 0.3, delay: index * 0.04 }}
+                            className="relative group"
+                          >
+                            <div className="aspect-square rounded-2xl overflow-hidden glass-card p-0">
+                              <img
+                                src={item.image}
+                                alt={`${item.type} item`}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-400"
+                              />
+                            </div>
+                            {/* Color dot + delete */}
+                            <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                              <div
+                                className="w-6 h-6 rounded-full border-2 border-white shadow-md"
+                                style={{ backgroundColor: item.color }}
+                                title={item.colorName || item.color}
+                              />
+                              <button
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="p-1.5 rounded-full bg-red-500/90 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-all shadow-lg"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                            {/* Label */}
+                            <div className="mt-2 px-1">
+                              <div className="text-xs sm:text-sm font-medium capitalize text-foreground/80">{item.type}</div>
+                              {item.colorName && <div className="text-xs text-muted-foreground capitalize">{item.colorName}</div>}
+                              {item.accessoryType && <div className="text-xs text-muted-foreground/70">{item.accessoryType}</div>}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
@@ -377,18 +393,18 @@ export function WardrobePage() {
         {showUploadModal && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto"
             onClick={() => setShowUploadModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.94, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 my-4 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20"
+              className="w-full max-w-md my-4 glass-card p-6 sm:p-7"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl">Add Item</h2>
-                <button onClick={() => setShowUploadModal(false)} className="p-2 rounded-full hover:bg-white/20 transition-all">
-                  <X className="w-5 h-5" />
+                <h2 className="text-xl sm:text-2xl font-bold">Add Item</h2>
+                <button onClick={() => setShowUploadModal(false)} className="p-2 rounded-full bg-muted hover:bg-accent transition-all">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
@@ -534,7 +550,7 @@ export function WardrobePage() {
                   <button
                     onClick={handleSaveItem}
                     disabled={isUploading}
-                    className="w-full py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="btn-primary w-full justify-center py-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:transform-none"
                   >
                     {isUploading ? 'Saving…' : 'Save to Wardrobe'}
                   </button>

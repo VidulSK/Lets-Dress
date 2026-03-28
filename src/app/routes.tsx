@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import { HomePage } from './pages/HomePage';
-import { SignUpPage } from './pages/SignUpPage';
-import { SignInPage } from './pages/SignInPage';
+import { LoginPage } from './pages/LoginPage';
 import { WardrobePage } from './pages/WardrobePage';
 import { RandomizerPage } from './pages/RandomizerPage';
 import { EventPlannerPage } from './pages/EventPlannerPage';
@@ -12,23 +11,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0c29]">
-        <div className="w-8 h-8 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
       </div>
     );
   }
   
-  return isAuthenticated ? <>{children}</> : <Navigate to="/signin" replace />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-// Redirect already-authenticated users to wardrobe
 function GuestOnlyRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0c29]">
-        <div className="w-8 h-8 rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -42,20 +40,23 @@ export const router = createBrowserRouter([
     element: <HomePage />,
   },
   {
-    path: '/signup',
+    // Unified login page (sign in + sign up tabs)
+    path: '/login',
     element: (
       <GuestOnlyRoute>
-        <SignUpPage />
+        <LoginPage />
       </GuestOnlyRoute>
     ),
   },
   {
+    // Legacy /signin → redirect to /login
     path: '/signin',
-    element: (
-      <GuestOnlyRoute>
-        <SignInPage />
-      </GuestOnlyRoute>
-    ),
+    element: <Navigate to="/login" replace />,
+  },
+  {
+    // Legacy /signup → redirect to /login?tab=signup
+    path: '/signup',
+    element: <Navigate to="/login?tab=signup" replace />,
   },
   {
     path: '/wardrobe',
