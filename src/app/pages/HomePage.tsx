@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Clock, TrendingUp, Sparkles, ArrowRight, ChevronDown, Play } from 'lucide-react';
+import { Clock, TrendingUp, Sparkles, ArrowRight, ChevronDown, Play, BookOpen, Zap } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -74,7 +74,7 @@ export function HomePage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
           />
         )}
       </AnimatePresence>
@@ -87,25 +87,45 @@ export function HomePage() {
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-            className="fixed left-0 top-0 h-full w-64 z-50 glass-card border-0 border-r flex flex-col pt-20 pb-8 px-4"
+            className="fixed left-0 top-0 h-full w-72 z-40 glass-card border-0 border-r flex flex-col pt-28 pb-8 px-4 overflow-y-auto shadow-2xl"
             style={{ borderRadius: '0 1.5rem 1.5rem 0' }}
           >
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4 px-2">
-              Navigate
-            </p>
-            {[
-              { id: 'our-story', label: 'Our Story' },
-              { id: 'trends', label: 'Trends & Styles' },
-              { id: 'perks', label: 'Perks' },
-            ].map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => scrollToSection(id)}
-                className="text-left px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-muted transition-all duration-200 mb-1"
-              >
-                {label}
-              </button>
-            ))}
+            {/* Decorative orbs inside sidebar for user friendly aesthetic */}
+            <div className="absolute top-0 right-0 w-32 h-32 orb orb-1 opacity-20 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 orb orb-2 opacity-10 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col gap-1 h-full font-medium">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 px-2">
+                Menu
+              </p>
+              {[
+                { id: 'our-story', label: 'Our Story', icon: <BookOpen className="w-5 h-5 flex-shrink-0" /> },
+                { id: 'trends', label: 'Trends & Styles', icon: <TrendingUp className="w-5 h-5 flex-shrink-0" /> },
+                { id: 'perks', label: 'Perks', icon: <Zap className="w-5 h-5 flex-shrink-0" /> },
+              ].map(({ id, label, icon }) => (
+                <button
+                  key={id}
+                  onClick={() => scrollToSection(id)}
+                  className="flex items-center gap-4 text-left px-4 py-3.5 rounded-xl text-[15px] font-medium text-foreground hover:bg-violet-100 dark:hover:bg-violet-500/10 hover:text-violet-700 dark:hover:text-violet-300 transition-all duration-200 mb-2 group w-full"
+                >
+                  <span className="text-muted-foreground group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                    {icon}
+                  </span>
+                  <span>{label}</span>
+                  <ChevronDown className="w-4 h-4 ml-auto -rotate-90 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
+                </button>
+              ))}
+              
+              <div className="mt-8 px-2 space-y-4 pt-6 border-t border-border">
+                 <a
+                   href={ctaHref}
+                   className="btn-primary w-full justify-center py-3.5 text-[15px] shadow-md hover:-translate-y-0.5"
+                 >
+                   {isAuthenticated ? 'Wardrobe' : 'Get Started'}
+                   <ArrowRight className="w-4 h-4 ml-1" />
+                 </a>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -148,7 +168,7 @@ export function HomePage() {
             transition={{ delay: 0.55, duration: 0.8 }}
             className="text-lg sm:text-xl md:text-2xl mb-10 text-muted-foreground font-normal max-w-xl mx-auto leading-relaxed"
           >
-            Never waste another morning deciding what to wear. Curate, randomize, and plan your outfits — beautifully.
+            Never waste another morning deciding what to wear. Plan your outfits beautifully.
           </motion.p>
 
           {/* CTAs */}
@@ -162,7 +182,7 @@ export function HomePage() {
               href={ctaHref}
               className="btn-primary text-base px-8 py-3.5 w-full max-w-xs sm:w-auto justify-center"
             >
-              {isAuthenticated ? 'Go to Wardrobe' : 'Start Curating'}
+              {isAuthenticated ? 'Go to Wardrobe' : 'Start Dressing'}
               <ArrowRight className="w-4 h-4" />
             </a>
             <button
@@ -207,7 +227,7 @@ export function HomePage() {
             </p>
 
             <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-6 max-w-2xl mx-auto">
-              <strong className="text-foreground font-semibold">Let's Dress</strong> gives you back those mornings —
+              <strong className="text-foreground font-semibold">Let's Dress</strong> gives you back those mornings -
               smart outfit suggestions, personalized planning, and a wardrobe that just <em>works</em>.
             </p>
 
