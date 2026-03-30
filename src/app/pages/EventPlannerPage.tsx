@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
+import { useTour } from '../contexts/TourContext';
 
 interface Event {
   date: string;
@@ -17,6 +18,7 @@ function formatDateStr(d: Date): string {
 }
 
 export function EventPlannerPage() {
+  const { advanceIfOnStep, isTourActive } = useTour();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -57,6 +59,7 @@ export function EventPlannerPage() {
     setShowEventModal(true);
     setEventTitle('');
     setEventDressType('');
+    if (isTourActive) advanceIfOnStep('event-calendar');
   };
 
   const handleSaveEvent = async () => {
@@ -73,6 +76,7 @@ export function EventPlannerPage() {
           setShowEventModal(false);
           setEventTitle('');
           setEventDressType('');
+          if (isTourActive) advanceIfOnStep('event-dress-type');
         }
       } catch (e) { console.error('Failed to save event:', e); }
     }
@@ -124,7 +128,7 @@ export function EventPlannerPage() {
           </div>
 
           {/* Calendar Grid */}
-          <div className="glass-card overflow-hidden">
+          <div id="tour-calendar" className="glass-card overflow-hidden">
             {/* Day Headers */}
             <div className="grid grid-cols-7 border-b border-border">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -223,7 +227,7 @@ export function EventPlannerPage() {
 
             {/* Add New Event */}
             <div className="space-y-4">
-              <div>
+              <div id="tour-event-title">
                 <label className="block mb-2 text-sm font-medium text-muted-foreground">Event Title</label>
                 <input
                   type="text"
@@ -235,7 +239,7 @@ export function EventPlannerPage() {
                   autoFocus
                 />
               </div>
-              <div>
+              <div id="tour-event-dress-type">
                 <label className="block mb-2 text-sm font-medium text-muted-foreground">Required Dress Type</label>
                 <select
                   value={eventDressType}

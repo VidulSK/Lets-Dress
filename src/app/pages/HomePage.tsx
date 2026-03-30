@@ -4,6 +4,7 @@ import { Clock, TrendingUp, Sparkles, ArrowRight, ChevronDown, Play, BookOpen, Z
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
+import { useTour } from '../contexts/TourContext';
 
 const perks = [
   {
@@ -31,10 +32,16 @@ const perks = [
     description: 'Our intelligent rotation keeps your looks creative, fresh, and completely unique every single day of the week.',
     emoji: '🔄',
   },
+  {
+    title: 'See Outfits On You',
+    description: 'Visualize your randomized outfit on a realistic virtual avatar dressed in your own actual clothes — before you even open your wardrobe.',
+    emoji: '🧐',
+  },
 ];
 
 export function HomePage() {
   const { user, isAuthenticated } = useAuth();
+  const { startTour, tourCompleted } = useTour();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const ctaHref = isAuthenticated ? '/wardrobe' : '/login';
 
@@ -87,7 +94,7 @@ export function HomePage() {
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-            className="fixed left-0 top-0 h-full w-72 z-40 glass-card border-0 border-r flex flex-col pt-28 pb-8 px-4 overflow-y-auto shadow-2xl"
+            className="fixed left-0 top-0 h-full w-72 z-40 glass-card border-0 border-r flex flex-col pt-28 pb-8 px-4 shadow-2xl"
             style={{ borderRadius: '0 1.5rem 1.5rem 0' }}
           >
             {/* Decorative orbs inside sidebar for user friendly aesthetic */}
@@ -101,7 +108,7 @@ export function HomePage() {
               {[
                 { id: 'our-story', label: 'Our Story', icon: <BookOpen className="w-5 h-5 flex-shrink-0" /> },
                 { id: 'trends', label: 'Trends & Styles', icon: <TrendingUp className="w-5 h-5 flex-shrink-0" /> },
-                { id: 'perks', label: 'Perks', icon: <Zap className="w-5 h-5 flex-shrink-0" /> },
+                { id: 'why-lets-dress', label: 'Why Let\'s Dress', icon: <Zap className="w-5 h-5 flex-shrink-0" /> },
               ].map(({ id, label, icon }) => (
                 <button
                   key={id}
@@ -115,15 +122,15 @@ export function HomePage() {
                   <ChevronDown className="w-4 h-4 ml-auto -rotate-90 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
                 </button>
               ))}
-              
+
               <div className="mt-8 px-2 space-y-4 pt-6 border-t border-border">
-                 <a
-                   href={ctaHref}
-                   className="btn-primary w-full justify-center py-3.5 text-[15px] shadow-md hover:-translate-y-0.5"
-                 >
-                   {isAuthenticated ? 'Wardrobe' : 'Get Started'}
-                   <ArrowRight className="w-4 h-4 ml-1" />
-                 </a>
+                <a
+                  href={ctaHref}
+                  className="btn-primary w-full justify-center py-3.5 text-[15px] shadow-md hover:-translate-y-0.5"
+                >
+                  {isAuthenticated ? 'Wardrobe' : 'Get Started'}
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </a>
               </div>
             </div>
           </motion.div>
@@ -131,7 +138,7 @@ export function HomePage() {
       </AnimatePresence>
 
       {/* ── Hero Section ──────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      <section id="hero-section" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
 
         {/* Hero content */}
         <motion.div
@@ -186,20 +193,21 @@ export function HomePage() {
               <ArrowRight className="w-4 h-4" />
             </a>
             <button
-              onClick={() => scrollToSection('perks')}
+              onClick={() => scrollToSection('why-lets-dress')}
               className="btn-ghost text-base px-8 py-3.5 w-full max-w-xs sm:w-auto justify-center"
             >
               Learn More
               <ChevronDown className="w-4 h-4" />
             </button>
-            {/* Watch Video button */}
-            <a
-              href="/video"
+            {/* Interactive Tour Button */}
+            <button
+              id="tour-start-btn"
+              onClick={startTour}
               className="flex items-center justify-center gap-2 w-full max-w-xs sm:w-auto px-8 py-3.5 rounded-full text-base font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-all duration-300 hover:-translate-y-0.5"
             >
               <Play className="w-4 h-4 fill-current" />
-              Watch Video
-            </a>
+              Interactive Tour
+            </button>
           </motion.div>
         </motion.div>
       </section>
@@ -302,7 +310,7 @@ export function HomePage() {
       </section>
 
       {/* ── Perks Section ─────────────────────────────────────── */}
-      <section id="perks" className="relative py-20 sm:py-28 px-4 z-10">
+      <section id="why-lets-dress" className="relative py-20 sm:py-28 px-4 z-10">
         <div className="section-container">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -322,9 +330,9 @@ export function HomePage() {
             </p>
           </motion.div>
 
-          {/* First 3 perks in normal grid */}
+          {/* Perks Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto mb-4 sm:mb-6">
-            {perks.slice(0, 3).map((perk, index) => (
+            {perks.map((perk, index) => (
               <motion.div
                 key={perk.title}
                 initial={{ opacity: 0, y: 24 }}
@@ -345,29 +353,6 @@ export function HomePage() {
             ))}
           </div>
 
-          {/* Last 2 perks — centered row */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center max-w-5xl mx-auto">
-            {perks.slice(3).map((perk, index) => (
-              <motion.div
-                key={perk.title}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: (index + 3) * 0.08, type: 'spring', damping: 22 }}
-                viewport={{ once: true, margin: '-40px' }}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className="glass-card p-6 sm:p-7 flex flex-col gap-4 transition-shadow duration-300 w-full sm:max-w-sm"
-              >
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-violet-100 to-pink-100 dark:from-violet-500/15 dark:to-pink-500/15 border border-violet-200/50 dark:border-violet-500/20 flex items-center justify-center text-2xl sm:text-3xl shrink-0 shadow-sm">
-                  {perk.emoji}
-                </div>
-                <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2">{perk.title}</h3>
-                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">{perk.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -375,7 +360,7 @@ export function HomePage() {
             viewport={{ once: true }}
             className="text-center mt-14"
           >
-            <a href={ctaHref} className="btn-primary text-base px-8 py-4">
+            <a id="tour-get-started" href={ctaHref} className="btn-primary text-base px-8 py-4">
               {isAuthenticated ? 'Open My Wardrobe' : 'Get Started Free'}
               <ArrowRight className="w-4 h-4" />
             </a>

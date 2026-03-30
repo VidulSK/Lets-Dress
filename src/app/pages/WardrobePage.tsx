@@ -4,6 +4,8 @@ import { Upload, Camera, X, Pipette, Loader2 } from 'lucide-react';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router';
+import { useTour, TOUR_STEPS } from '../contexts/TourContext';
 import { getColorNameFromApi } from '../utils/colorDetection';
 
 interface ClothingItem {
@@ -70,6 +72,8 @@ function sampleImageColor(img: HTMLImageElement, xRatio: number, yRatio: number)
 
 export function WardrobePage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { advanceIfOnStep, isTourActive, currentStep, goToStep } = useTour();
   const [items, setItems] = useState<ClothingItem[]>([]);
 
   useEffect(() => {
@@ -259,7 +263,26 @@ export function WardrobePage() {
       const res = await fetch('/api/wardrobe', { method: 'POST', body: formData });
       if (res.ok) {
         const savedItem = await res.json();
-        setItems(prev => [savedItem, ...prev]);
+        setItems(prev => {
+          const newItems = [savedItem, ...prev];
+          
+          // Tour logic
+          if (isTourActive && currentStep?.page === 'wardrobe') {
+            const hasTop = newItems.some(i => i.type === 'top');
+            const hasBottom = newItems.some(i => i.type === 'bottom');
+            const hasFootwear = newItems.some(i => i.type === 'footwear');
+            
+            if (hasTop && hasBottom && hasFootwear) {
+              setTimeout(() => {
+                goToStep(TOUR_STEPS.findIndex(s => s.id === 'nav-randomizer'));
+              }, 400); // slight delay for visual confirmation
+            } else {
+              advanceIfOnStep('wardrobe-occasion');
+            }
+          }
+          
+          return newItems;
+        });
         setShowUploadModal(false);
         setPreviewImage(null);
         setCurrentFile(null);
@@ -302,6 +325,7 @@ export function WardrobePage() {
             </div>
             <div className="flex gap-3 w-full sm:w-auto">
               <button
+                id="tour-upload-btn"
                 onClick={handleUploadClick}
                 className="btn-primary flex-1 sm:flex-none text-sm px-5 py-2.5 justify-center"
               >
@@ -420,7 +444,7 @@ export function WardrobePage() {
               ) : (
                 <div className="space-y-4">
                   {/* Preview with color picker pin overlay */}
-                  <div>
+                  <div id="tour-color-picker">
                     <label className="block mb-1 text-sm opacity-80">Pick Color — drag pin on image</label>
                     <div
                       ref={previewContainerRef}
@@ -499,7 +523,7 @@ export function WardrobePage() {
                   </div>
 
                   {/* Dress Type */}
-                  <div>
+                  <div id="tour-dress-type">
                     <label className="block mb-2 text-sm opacity-80">Dress Type</label>
                     <select
                       value={type}
@@ -530,7 +554,7 @@ export function WardrobePage() {
                   )}
 
                   {/* Occasions */}
-                  <div>
+                  <div id="tour-occasions">
                     <label className="block mb-2 text-sm opacity-80">Occasions (select all that apply)</label>
                     <div className="grid grid-cols-2 gap-2">
                       {OCCASION_OPTIONS.map(occ => (

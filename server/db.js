@@ -18,7 +18,7 @@ const SCHEMA_SQLITE = `
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    age TEXT, phone TEXT, gender TEXT, skinUndertone TEXT, favoriteColor TEXT, theme TEXT DEFAULT 'light'
+    age TEXT, phone TEXT, gender TEXT, skinUndertone TEXT, favoriteColor TEXT, theme TEXT DEFAULT 'light', tourCompleted INTEGER DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS wardrobe_items (
     id TEXT PRIMARY KEY,
@@ -58,7 +58,7 @@ const SCHEMA_PG = `
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    age TEXT, phone TEXT, gender TEXT, "skinUndertone" TEXT, "favoriteColor" TEXT, theme TEXT DEFAULT 'light'
+    age TEXT, phone TEXT, gender TEXT, "skinUndertone" TEXT, "favoriteColor" TEXT, theme TEXT DEFAULT 'light', "tourCompleted" INTEGER DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS wardrobe_items (
     id TEXT PRIMARY KEY,
@@ -117,6 +117,7 @@ sqliteDb = await new Promise((resolve) => {
           `ALTER TABLE wardrobe_items ADD COLUMN occasions TEXT DEFAULT ''`,
           `ALTER TABLE wardrobe_items ADD COLUMN accessoryType TEXT DEFAULT ''`,
           `ALTER TABLE events ADD COLUMN dressType TEXT DEFAULT ''`,
+          `ALTER TABLE users ADD COLUMN tourCompleted INTEGER DEFAULT 0`,
         ];
         let pending = migrations.length;
         if (pending === 0) {
@@ -170,6 +171,14 @@ if (process.env.DATABASE_URL) {
     if (res.rows.length > 0) {
       await client.query(`DROP TABLE weekly_outfits`);
     }
+
+    // Add tourCompleted column if missing
+    try {
+      const userRes = await client.query(`SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='tourCompleted'`);
+      if (userRes.rows.length === 0) {
+        await client.query(`ALTER TABLE users ADD COLUMN "tourCompleted" INTEGER DEFAULT 0`);
+      }
+    } catch(e) {}
 
     for (const stmt of SCHEMA_PG.split(';').map(s => s.trim()).filter(Boolean)) {
       await client.query(stmt);

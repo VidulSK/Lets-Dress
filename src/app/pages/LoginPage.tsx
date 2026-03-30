@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
+import { useTour, TOUR_STEPS } from '../contexts/TourContext';
 import {
   ArrowRight, Lock, User, Mail, Phone, Calendar, Palette, LogIn, UserPlus
 } from 'lucide-react';
@@ -12,6 +13,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login, signup } = useAuth();
+  const { isTourActive, currentStep, goToStep } = useTour();
 
   const initialTab: Tab = (searchParams.get('tab') === 'signup') ? 'signup' : 'signin';
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -28,7 +30,12 @@ export function LoginPage() {
     setLoading(true);
     const ok = await login(signInData.username, signInData.password);
     setLoading(false);
-    if (ok) navigate('/wardrobe');
+    if (ok) {
+      if (isTourActive && currentStep?.page === 'login') {
+        goToStep(TOUR_STEPS.findIndex(s => s.id === 'wardrobe-welcome'));
+      }
+      navigate('/wardrobe');
+    }
     else alert('Invalid username or password');
   };
 
@@ -41,6 +48,9 @@ export function LoginPage() {
     setLoading(true);
     try {
       await signup(signUpData);
+      if (isTourActive && currentStep?.page === 'login') {
+        goToStep(TOUR_STEPS.findIndex(s => s.id === 'wardrobe-welcome'));
+      }
       navigate('/wardrobe');
     } catch (err: any) {
       alert(err.message || 'Failed to create account');
@@ -151,13 +161,14 @@ export function LoginPage() {
             </a>
 
             {/* Tab switcher */}
-            <div className="flex p-1.5 rounded-2xl bg-muted/80 backdrop-blur-md lg:backdrop-blur-none border border-border mb-8 gap-1">
+            <div id="tour-login-tabs" className="flex p-1.5 rounded-2xl bg-muted/80 backdrop-blur-md lg:backdrop-blur-none border border-border mb-8 gap-1">
               {([
-                { key: 'signin' as Tab, label: 'Sign In', icon: <LogIn className="w-3.5 h-3.5" /> },
-                { key: 'signup' as Tab, label: 'Sign Up', icon: <UserPlus className="w-3.5 h-3.5" /> },
+                { key: 'signin' as Tab, label: 'Sign In', icon: <LogIn className="w-3.5 h-3.5" />, tourId: 'tour-signin-tab' },
+                { key: 'signup' as Tab, label: 'Sign Up', icon: <UserPlus className="w-3.5 h-3.5" />, tourId: 'tour-signup-tab' },
               ] as const).map(t => (
                 <button
                   key={t.key}
+                  id={t.tourId}
                   onClick={() => setTab(t.key)}
                   className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
                     tab === t.key

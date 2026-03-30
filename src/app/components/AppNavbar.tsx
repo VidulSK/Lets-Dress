@@ -4,12 +4,14 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTour } from '../contexts/TourContext';
 
 export function AppNavbar() {
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { advanceIfOnStep, isTourActive } = useTour();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
@@ -66,6 +68,10 @@ export function AppNavbar() {
                     <Link
                       key={link.to}
                       to={link.to}
+                      id={`nav-${link.to.replace('/', '') || 'home'}`}
+                      onClick={() => {
+                        if (isTourActive) advanceIfOnStep(`nav-${link.to.replace('/', '') || 'home'}`);
+                      }}
                       className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-[0.9rem] font-semibold transition-all duration-200 group
                         ${active
                           ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 shadow-sm'
@@ -186,7 +192,11 @@ export function AppNavbar() {
                   >
                     <Link
                       to={link.to}
-                      onClick={closeSidebar}
+                      id={`mobile-nav-${link.to.replace('/', '') || 'home'}`}
+                      onClick={() => {
+                        closeSidebar();
+                        if (isTourActive) advanceIfOnStep(`nav-${link.to.replace('/', '') || 'home'}`);
+                      }}
                       className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200
                         ${active
                           ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 shadow-sm'

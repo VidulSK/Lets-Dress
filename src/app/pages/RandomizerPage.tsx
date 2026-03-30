@@ -4,6 +4,7 @@ import { Shuffle, Trash2, Check } from 'lucide-react';
 import { AppNavbar } from '../components/AppNavbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
+import { useTour } from '../contexts/TourContext';
 
 // ── Color Compatibility Array ─────────────────────────────────────────────────
 // Fill in matching color names for each base color.
@@ -114,6 +115,7 @@ function buildAccessoryReminder(accessories: ClothingItem[]): string | null {
 
 export function RandomizerPage() {
   const { user } = useAuth();
+  const { advanceIfOnStep, isTourActive } = useTour();
   const [items, setItems] = useState<ClothingItem[]>([]);
   const [events, setEvents] = useState<{ date: string; title: string; dressType: string }[]>([]);
   const [dayEntries, setDayEntries] = useState<DayEntry[]>([]);
@@ -321,6 +323,8 @@ export function RandomizerPage() {
       setHasGenerated(true);
       setTryOnImageUrl(null);
       setTryOnError(null);
+      
+      if (isTourActive) advanceIfOnStep('randomizer-button');
 
       // Optimistic update — show previews in boxes right away, don't wait for server
       setDayEntries(prev =>
@@ -377,6 +381,8 @@ export function RandomizerPage() {
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Try-on failed');
       setTryOnImageUrl(data.imageDataUrl);
+      
+      if (isTourActive) advanceIfOnStep('randomizer-avatar');
     } catch (err: any) {
       setTryOnError(err.message || 'Try-on service unavailable. Please try again.');
     } finally {
@@ -439,6 +445,7 @@ export function RandomizerPage() {
                 <p className="text-sm opacity-50">Tick a day below to enable the randomizer</p>
               )}
               <button
+                id="tour-randomize-btn"
                 onClick={() => generateOutfit()}
                 disabled={isSpinning || tickedDays.size === 0}
                 className="flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -479,7 +486,7 @@ export function RandomizerPage() {
 
                   {/* Generate button */}
                   {!isTryingOn && !tryOnImageUrl && (
-                    <div className="flex justify-center mb-6">
+                    <div id="tour-tryon-btn" className="flex justify-center mb-6">
                       <button
                         onClick={generateTryOn}
                         className="flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transition-all shadow-lg shadow-purple-500/30"
@@ -586,7 +593,7 @@ export function RandomizerPage() {
           </AnimatePresence>
 
           {/* 7-Day Strip */}
-          <div className="w-full">
+          <div id="tour-weekly-planner" className="w-full">
             <div className="text-center mb-6">
               <h2 className="text-2xl">Weekly Planner</h2>
               <p className="text-[10px] uppercase tracking-widest opacity-50 mt-2 lg:hidden">
@@ -607,12 +614,14 @@ export function RandomizerPage() {
                   } else {
                     setTickedDays(new Set([de.dateStr]));
                     setCurrentOutfit(de.outfit || { top: null, bottom: null, footwear: null });
+                    if (isTourActive) advanceIfOnStep('randomizer-tick');
                   }
                 };
 
                 return (
                   <div
                     key={de.dateStr}
+                    id={isToday ? 'tour-today-day' : undefined}
                     className={`relative flex-shrink-0 snap-start w-[140px] sm:w-[160px] lg:w-auto p-3 rounded-xl border transition-all ${de.isPast
                         ? 'bg-white/5 border-white/10 opacity-40'
                         : isTicked

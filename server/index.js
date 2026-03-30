@@ -135,6 +135,22 @@ app.put('/api/auth/theme', requireAuth, (req, res) => {
   });
 });
 
+app.get('/api/tour-status', requireAuth, (req, res) => {
+  db.get(`SELECT tourCompleted FROM users WHERE id = ?`, [req.userId], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    // Handle both SQLite (tourCompleted) and PG ("tourCompleted")
+    const completed = row?.tourCompleted || row?.['tourCompleted'];
+    res.json({ completed: completed === 1 || completed === true });
+  });
+});
+
+app.post('/api/tour-completed', requireAuth, (req, res) => {
+  db.run(`UPDATE users SET tourCompleted = 1 WHERE id = ?`, [req.userId], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
 // --- WARDROBE ROUTES ---
 app.get('/api/wardrobe', requireAuth, (req, res) => {
   db.all(`SELECT * FROM wardrobe_items WHERE userId = ? ORDER BY uploadedAt DESC`, [req.userId], (err, rows) => {
