@@ -24,7 +24,7 @@ function TooltipArrow({ direction }: { direction?: string }) {
 }
 
 export function TourOverlay() {
-  const { isTourActive, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, skipTour } = useTour();
+  const { isTourActive, currentStep, currentStepIndex, totalSteps, nextStep, prevStep, skipTour, tourCompleted } = useTour();
   const [highlightRect, setHighlightRect] = useState<HighlightRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const [arrowPos, setArrowPos] = useState({ top: 0, left: 0 });
@@ -193,9 +193,12 @@ export function TourOverlay() {
   const arrowBounceY = arrowDir === 'up' || arrowDir === 'down' ? [0, -6, 0] : [0, 0, 0];
   const arrowBounceX = arrowDir === 'left' || arrowDir === 'right' ? [0, -6, 0] : [0, 0, 0];
 
+  if (!isTourActive || !currentStep) return null;
+  if (currentStep.invisible) return null;
+
   return (
     <AnimatePresence>
-      {isTourActive && (
+      {isTourActive && currentStep && (
         <motion.div key="tour-master" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9000] pointer-events-none">
           {/* ── Dark backdrop with spotlight cutout ── */}
           <motion.div
