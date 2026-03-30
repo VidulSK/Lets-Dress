@@ -13,10 +13,17 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login, signup } = useAuth();
-  const { isTourActive, currentStep, goToStep } = useTour();
+  const { isTourActive, currentStep, goToStep, notifySignupTabActive, notifySigninTabActive } = useTour();
 
   const initialTab: Tab = (searchParams.get('tab') === 'signup') ? 'signup' : 'signin';
   const [tab, setTab] = useState<Tab>(initialTab);
+
+  // Centralized tab switcher — also notifies the tour
+  const handleTabSwitch = (newTab: Tab) => {
+    setTab(newTab);
+    if (newTab === 'signup') notifySignupTabActive();
+    else notifySigninTabActive();
+  };
 
   const [signInData, setSignInData] = useState({ username: '', password: '' });
   const [signUpData, setSignUpData] = useState({
@@ -169,7 +176,7 @@ export function LoginPage() {
                 <button
                   key={t.key}
                   id={t.tourId}
-                  onClick={() => setTab(t.key)}
+                  onClick={() => handleTabSwitch(t.key)}
                   className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
                     tab === t.key
                       ? 'bg-white dark:bg-violet-500/25 text-violet-700 dark:text-violet-300 shadow-sm'
@@ -238,7 +245,7 @@ export function LoginPage() {
                   <p className="mt-6 lg:mt-7 text-center text-sm text-muted-foreground">
                     Don't have an account?{' '}
                     <button
-                      onClick={() => setTab('signup')}
+                      onClick={() => handleTabSwitch('signup')}
                       className="text-violet-600 dark:text-violet-400 font-bold ml-1 hover:underline transition-colors"
                     >
                       Create one
@@ -256,7 +263,7 @@ export function LoginPage() {
                   <h1 className="text-3xl lg:text-4xl xl:text-5xl font-black mb-1.5 lg:mb-2 tracking-tight">Create Account</h1>
                   <p className="text-muted-foreground text-sm lg:text-base mb-6 lg:mb-7">Personalize your wardrobe experience</p>
 
-                  <form onSubmit={handleSignUp} className="space-y-3">
+                  <form id="tour-signup-form" onSubmit={handleSignUp} className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="relative group">
                         <div className={iconClass}><User size={16} /></div>
@@ -326,7 +333,7 @@ export function LoginPage() {
                   <p className="mt-6 text-center text-sm text-muted-foreground">
                     Already have an account?{' '}
                     <button
-                      onClick={() => setTab('signin')}
+                      onClick={() => handleTabSwitch('signin')}
                       className="text-violet-600 dark:text-violet-400 font-bold ml-1 hover:underline transition-colors"
                     >
                       Sign In

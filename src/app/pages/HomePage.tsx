@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Clock, TrendingUp, Sparkles, ArrowRight, ChevronDown, Play, BookOpen, Zap } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
-import { useTour } from '../contexts/TourContext';
+import { useTour, TOUR_STEPS } from '../contexts/TourContext';
+import { Link } from 'react-router';
 
 const perks = [
   {
@@ -39,11 +40,36 @@ const perks = [
   },
 ];
 
+// Floating sparkle particles for hero background — generated once at module level
+const PARTICLES: { id: number; x: number; y: number; size: number; delay: number; duration: number }[] = Array.from(
+  { length: 18 },
+  (_, i) => ({
+    id: i,
+    x: (i * 37 + 11) % 100,
+    y: (i * 53 + 7) % 100,
+    size: 3 + (i % 5),
+    delay: (i * 0.4) % 4,
+    duration: 3 + (i % 4),
+  }),
+);
+
 export function HomePage() {
   const { user, isAuthenticated } = useAuth();
-  const { startTour, tourCompleted } = useTour();
+  const { startTour, tourCompleted, advanceIfOnStep, isTourActive, goToStep } = useTour();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [tourPulse, setTourPulse] = useState(false);
   const ctaHref = isAuthenticated ? '/wardrobe' : '/login';
+
+  // Pulse the tour button every few seconds to attract attention
+  useEffect(() => {
+    if (!tourCompleted && !isTourActive) {
+      const id = setInterval(() => {
+        setTourPulse(true);
+        setTimeout(() => setTourPulse(false), 900);
+      }, 4000);
+      return () => clearInterval(id);
+    }
+  }, [tourCompleted, isTourActive]);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -124,21 +150,60 @@ export function HomePage() {
               ))}
 
               <div className="mt-8 px-2 space-y-4 pt-6 border-t border-border">
-                <a
-                  href={ctaHref}
-                  className="btn-primary w-full justify-center py-3.5 text-[15px] shadow-md hover:-translate-y-0.5"
+                <Link
+                  to={ctaHref}
+                  className="btn-primary flex items-center justify-center py-3.5 text-[15px] shadow-md hover:-translate-y-0.5 w-full"
+                  onClick={() => {
+                    if (isTourActive) {
+                      if (isAuthenticated) {
+                        goToStep(TOUR_STEPS.findIndex(s => s.id === 'wardrobe-welcome'));
+                      } else {
+                        advanceIfOnStep('home-cta');
+                      }
+                    }
+                  }}
                 >
                   {isAuthenticated ? 'Wardrobe' : 'Get Started'}
                   <ArrowRight className="w-4 h-4 ml-1" />
-                </a>
+                </Link>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Hero Section ──────────────────────────────────────── */}
+      {/* ── Hero Section ────────────────────────────────────────────────────── */}
       <section id="hero-section" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+
+        {/* Floating sparkle particles */}
+        {PARTICLES.map(p => (
+          <motion.div
+            key={p.id}
+            className="absolute rounded-full pointer-events-none z-0"
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: p.size,
+              height: p.size,
+              background: p.id % 3 === 0
+                ? 'rgba(139,92,246,0.6)'
+                : p.id % 3 === 1
+                ? 'rgba(236,72,153,0.5)'
+                : 'rgba(167,139,250,0.4)',
+            }}
+            animate={{
+              y: [0, -18, 0],
+              opacity: [0.3, 0.9, 0.3],
+              scale: [1, 1.4, 1],
+            }}
+            transition={{
+              duration: p.duration,
+              delay: p.delay,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
 
         {/* Hero content */}
         <motion.div
@@ -154,7 +219,12 @@ export function HomePage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="inline-flex items-center gap-2 pill-badge text-violet-700 dark:text-violet-300 mb-6"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <motion.span
+              animate={{ rotate: [0, 20, -20, 0] }}
+              transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+            </motion.span>
             <span className="text-sm font-semibold">{isAuthenticated ? `Welcome back, ${user?.username}!` : 'Elevate Your Style'}</span>
           </motion.div>
 
@@ -185,13 +255,22 @@ export function HomePage() {
             transition={{ delay: 0.72, duration: 0.7 }}
             className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center w-full"
           >
-            <a
-              href={ctaHref}
-              className="btn-primary text-base px-8 py-3.5 w-full max-w-xs sm:w-auto justify-center"
+            <Link
+              to={ctaHref}
+              className="btn-primary flex justify-center items-center gap-1.5 text-[15px] sm:text-base px-6 py-3.5 w-full max-w-xs sm:w-auto shadow-md"
+              onClick={() => {
+                if (isTourActive) {
+                  if (isAuthenticated) {
+                     goToStep(TOUR_STEPS.findIndex(s => s.id === 'wardrobe-welcome'));
+                  } else {
+                     advanceIfOnStep('home-cta');
+                  }
+                }
+              }}
             >
               {isAuthenticated ? 'Go to Wardrobe' : 'Start Dressing'}
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
             <button
               onClick={() => scrollToSection('why-lets-dress')}
               className="btn-ghost text-base px-8 py-3.5 w-full max-w-xs sm:w-auto justify-center"
@@ -199,15 +278,51 @@ export function HomePage() {
               Learn More
               <ChevronDown className="w-4 h-4" />
             </button>
-            {/* Interactive Tour Button */}
-            <button
+
+            {/* ✨ Interactive Tour Button — always visible, premium animated */}
+            <motion.button
               id="tour-start-btn"
               onClick={startTour}
-              className="flex items-center justify-center gap-2 w-full max-w-xs sm:w-auto px-8 py-3.5 rounded-full text-base font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-all duration-300 hover:-translate-y-0.5"
+              animate={tourPulse && !tourCompleted ? { scale: [1, 1.06, 1] } : {}}
+              transition={{ duration: 0.4 }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              className="relative overflow-hidden flex items-center justify-center gap-2 w-full max-w-xs sm:w-auto px-7 py-3.5 rounded-full text-base font-bold text-white transition-all duration-300"
+              style={{
+                background: tourCompleted
+                  ? 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'
+                  : 'linear-gradient(135deg, #7c3aed 0%, #c026d3 60%, #ec4899 100%)',
+                boxShadow: tourPulse && !tourCompleted
+                  ? '0 0 0 6px rgba(139,92,246,0.25), 0 4px 20px rgba(124,58,237,0.55)'
+                  : '0 4px 18px rgba(124,58,237,0.4)',
+              }}
             >
-              <Play className="w-4 h-4 fill-current" />
-              Interactive Tour
-            </button>
+              {/* Shimmer sweep — only when not completed */}
+              {!tourCompleted && (
+                <motion.span
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.22) 50%, transparent 60%)',
+                  }}
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.8 }}
+                />
+              )}
+              <motion.span
+                animate={!tourCompleted ? { rotate: [0, 15, -15, 0] } : {}}
+                transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+              >
+                <Play className="w-4 h-4 fill-current" />
+              </motion.span>
+              {tourCompleted ? 'Replay Tour' : 'Interactive Tour'}
+              {/* Live step count badge — only on first run */}
+              {!tourCompleted && (
+                <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-[9px] font-black text-amber-900 shadow-sm border border-white">
+                  {TOUR_STEPS.length}
+                </span>
+              )}
+            </motion.button>
+
           </motion.div>
         </motion.div>
       </section>
@@ -360,10 +475,23 @@ export function HomePage() {
             viewport={{ once: true }}
             className="text-center mt-14"
           >
-            <a id="tour-get-started" href={ctaHref} className="btn-primary text-base px-8 py-4">
+            <Link 
+              id="tour-get-started" 
+              to={ctaHref} 
+              className="btn-primary inline-flex items-center justify-center gap-2 text-base px-8 py-4"
+              onClick={() => {
+                if (isTourActive) {
+                  if (isAuthenticated) {
+                    goToStep(TOUR_STEPS.findIndex(s => s.id === 'wardrobe-welcome'));
+                  } else {
+                    advanceIfOnStep('home-cta');
+                  }
+                }
+              }}
+            >
               {isAuthenticated ? 'Open My Wardrobe' : 'Get Started Free'}
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
           </motion.div>
         </div>
       </section>

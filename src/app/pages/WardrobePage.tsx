@@ -83,6 +83,16 @@ export function WardrobePage() {
       .catch(console.error);
   }, []);
 
+  // Sync tour step if arriving from login page while tour is active
+  useEffect(() => {
+    if (isTourActive && currentStep?.page === 'login') {
+      const wardrobeStepIdx = TOUR_STEPS.findIndex(s => s.id === 'wardrobe-welcome');
+      if (wardrobeStepIdx !== -1) {
+        goToStep(wardrobeStepIdx);
+      }
+    }
+  }, [isTourActive, currentStep, goToStep]);
+
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [type, setType] = useState('top');

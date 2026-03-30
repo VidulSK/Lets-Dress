@@ -10,8 +10,8 @@ interface HighlightRect {
   height: number;
 }
 
-const TOOLTIP_WIDTH = 320;
-const TOOLTIP_HEIGHT_APPROX = 220;
+const TOOLTIP_WIDTH = 440;
+const TOOLTIP_HEIGHT_APPROX = 300;
 
 function TooltipArrow({ direction }: { direction?: string }) {
   if (!direction) return null;
@@ -30,8 +30,14 @@ export function TourOverlay() {
   const [arrowPos, setArrowPos] = useState({ top: 0, left: 0 });
   const [arrowDir, setArrowDir] = useState<string | undefined>(undefined);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [tooltipHidden, setTooltipHidden] = useState(false);
   const rafRef = useRef<number>(0);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Unhide tooltip automatically when the step changes
+  useEffect(() => {
+    setTooltipHidden(false);
+  }, [currentStepIndex]);
 
   const updateHighlight = useCallback(() => {
     if (!currentStep?.selector) {
@@ -57,10 +63,17 @@ export function TourOverlay() {
     // Position tooltip
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const pos = currentStep.position ?? 'bottom';
+    let pos = currentStep.position ?? 'bottom';
     let top = 0;
     let left = 0;
     const arrowSize = 40;
+
+    // Auto-flip: if position is bottom but the tooltip would render off-screen, flip it to top!
+    if (pos === 'bottom' && rect.bottom + padding + arrowSize + TOOLTIP_HEIGHT_APPROX > vh - 20) {
+      if (rect.top > vh - rect.bottom) { // Only if there is actually more room above!
+        pos = 'top';
+      }
+    }
 
     switch (pos) {
       case 'bottom':
@@ -94,8 +107,9 @@ export function TourOverlay() {
         break;
     }
 
-    // Clamp to viewport
-    left = Math.max(16, Math.min(left, vw - TOOLTIP_WIDTH - 16));
+    // Clamp to viewport using dynamic width to prevent mobile cutoff
+    const actualWidth = Math.min(TOOLTIP_WIDTH, vw - 32);
+    left = Math.max(16, Math.min(left, vw - actualWidth - 16));
     top = Math.max(16, Math.min(top, vh - TOOLTIP_HEIGHT_APPROX - 16));
     setTooltipPos({ top, left });
   }, [currentStep]);
@@ -129,16 +143,39 @@ export function TourOverlay() {
     setTooltipPos({ top: vh / 2 - TOOLTIP_HEIGHT_APPROX / 2, left: vw / 2 - TOOLTIP_WIDTH / 2 });
   }, [currentStep, isTourActive, updateHighlight]);
 
-  // Follow on resize / scroll
+  // Follow on resize / scroll and DOM mutations (like route changes!)
   useEffect(() => {
     if (!isTourActive) return;
-    const onScroll = () => { cancelAnimationFrame(rafRef.current); rafRef.current = requestAnimationFrame(updateHighlight); };
+    
+    // Use rAF + immediate call on every scroll event to keep highlight glued to element
+    const onScroll = () => {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(updateHighlight);
+    };
     const onResize = () => updateHighlight();
-    window.addEventListener('scroll', onScroll, true);
+    
+    // Observer to handle React Router page transitions seamlessly
+    const observer = new MutationObserver(() => {
+      // Small debounce for DOM mutations
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(updateHighlight);
+    });
+    
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'id']
+    });
+
+    // Listen on ALL scroll containers (capture phase catches nested scrollers)
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
     window.addEventListener('resize', onResize);
+    
     return () => {
-      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('scroll', onScroll, { capture: true });
       window.removeEventListener('resize', onResize);
+      observer.disconnect();
       cancelAnimationFrame(rafRef.current);
     };
   }, [isTourActive, updateHighlight]);
@@ -159,7 +196,7 @@ export function TourOverlay() {
   return (
     <AnimatePresence>
       {isTourActive && (
-        <>
+        <motion.div key="tour-master" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9000] pointer-events-none">
           {/* ── Dark backdrop with spotlight cutout ── */}
           <motion.div
             key="tour-backdrop"
@@ -189,24 +226,21 @@ export function TourOverlay() {
             )}
           </motion.div>
 
-          {/* Click capture layer (lets user click through to highlighted element) */}
-          <div
-            className="fixed inset-0 z-[9001]"
-            style={{ pointerEvents: 'all' }}
-            onClick={(e) => {
-              // Don't capture clicks over the highlighted element
-              if (highlightRect) {
-                const { clientX: x, clientY: y } = e;
-                if (
-                  x >= highlightRect.left && x <= highlightRect.left + highlightRect.width &&
-                  y >= highlightRect.top && y <= highlightRect.top + highlightRect.height
-                ) {
-                  return; // Allow interaction with highlighted element
-                }
-              }
-              // Do nothing — prevents clicking outside
-            }}
-          />
+          {/* Click capture layer (blocks clicks outside the highlighted element) */}
+          {highlightRect ? (
+            <>
+              {/* Top block */}
+              <div className="fixed top-0 left-0 right-0 pointer-events-auto" style={{ height: highlightRect.top }} />
+              {/* Bottom block */}
+              <div className="fixed bottom-0 left-0 right-0 pointer-events-auto" style={{ top: Math.min(window.innerHeight, highlightRect.top + highlightRect.height) }} />
+              {/* Left block */}
+              <div className="fixed pointer-events-auto" style={{ top: highlightRect.top, height: highlightRect.height, left: 0, width: highlightRect.left }} />
+              {/* Right block */}
+              <div className="fixed pointer-events-auto" style={{ top: highlightRect.top, height: highlightRect.height, left: highlightRect.left + highlightRect.width, right: 0 }} />
+            </>
+          ) : (
+            <div className="fixed inset-0 pointer-events-auto" />
+          )}
 
           {/* ── Bouncing Arrow ── */}
           {highlightRect && !isScrolling && arrowDir && (
@@ -227,25 +261,26 @@ export function TourOverlay() {
 
           {/* ── Tooltip Card ── */}
           <AnimatePresence mode="wait">
-            <motion.div
-              key={`tooltip-${currentStepIndex}`}
+            {!tooltipHidden && (
+              <motion.div
+                key={`tooltip-${currentStepIndex}`}
               initial={{ opacity: 0, scale: 0.92, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: -10 }}
               transition={{ duration: 0.3, type: 'spring', stiffness: 200, damping: 22 }}
-              className="fixed z-[9005] pointer-events-all"
+              className="fixed z-[9005] pointer-events-auto"
               style={
                 isCenter
                   ? {
                       top: '50%',
                       left: '50%',
                       transform: 'translate(-50%, -50%)',
-                      width: TOOLTIP_WIDTH,
+                      width: Math.min(TOOLTIP_WIDTH, window.innerWidth - 32),
                     }
                   : {
                       top: tooltipPos.top,
                       left: tooltipPos.left,
-                      width: TOOLTIP_WIDTH,
+                      width: Math.min(TOOLTIP_WIDTH, window.innerWidth - 32),
                     }
               }
             >
@@ -285,40 +320,57 @@ export function TourOverlay() {
                 </div>
 
                 {/* Content */}
-                <h3 className="font-bold text-base text-gray-900 dark:text-white mb-2 leading-snug">
+                <h3 className="font-bold text-lg sm:text-xl text-gray-900 dark:text-white mb-3 leading-snug">
                   {currentStep?.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-white/70 leading-relaxed mb-4">
+                <p className="text-base sm:text-lg text-gray-600 dark:text-white/70 leading-relaxed mb-6">
                   {formatDesc(currentStep?.description ?? '')}
                 </p>
 
                 {/* Buttons */}
-                <div className="flex gap-2 items-center justify-between">
+                <div className="flex gap-3 items-center justify-between">
                   <div className="flex gap-2">
                     {currentStepIndex > 0 && (
                       <button
                         onClick={prevStep}
-                        className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-white/50 dark:hover:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-base font-medium text-gray-500 hover:text-gray-700 dark:text-white/50 dark:hover:text-white/80 hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
                       >
-                        <ChevronLeft className="w-4 h-4" />
+                        <ChevronLeft className="w-5 h-5" />
                         Back
                       </button>
                     )}
                   </div>
 
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-3 items-center">
                     <button
                       onClick={skipTour}
-                      className="px-3 py-2 rounded-xl text-sm font-medium text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
+                      className="px-4 py-2.5 rounded-xl text-base font-medium text-gray-400 hover:text-gray-600 dark:text-white/40 dark:hover:text-white/70 hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
                     >
                       Skip tour
                     </button>
-                    {!currentStep?.waitForAction && (
+                    {currentStep?.waitForAction ? (
+                      <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          // "Got It" always advances to next step (which may be login-idle/invisible)
+                          // Exception: if nextOnGotIt is explicitly false, just hide tooltip for actions
+                          if (currentStep.nextOnGotIt === false) {
+                            setTooltipHidden(true);
+                          } else {
+                            nextStep();
+                          }
+                        }}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-base font-bold text-white transition-all bg-gray-800 dark:bg-white/20 hover:bg-black dark:hover:bg-white/30"
+                      >
+                        Got It 👍
+                      </motion.button>
+                    ) : (
                       <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                         onClick={nextStep}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-base font-bold text-white transition-all"
                         style={{
                           background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
                           boxShadow: '0 4px 14px rgba(124,58,237,0.4)',
@@ -338,8 +390,9 @@ export function TourOverlay() {
                 </div>
               </div>
             </motion.div>
+            )}
           </AnimatePresence>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );

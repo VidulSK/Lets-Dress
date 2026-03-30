@@ -9,8 +9,10 @@ export interface TourStep {
   description: string;
   arrowDirection?: 'up' | 'down' | 'left' | 'right';
   scrollTo?: string;          // selector to scroll into view before showing
-  waitForAction?: boolean;    // if true, shows "I did it! →" button
+  waitForAction?: boolean;    // if true, shows "Got It" button
   navigateTo?: string;        // Navigate to this path after this step
+  nextOnGotIt?: boolean;      // if true, clicking "Got It" advances step (instead of hiding tooltip)
+  invisible?: boolean;        // if true, entire TourOverlay renders absolutely nothing
   position?: 'top' | 'bottom' | 'left' | 'right' | 'center'; // tooltip position
 }
 
@@ -67,12 +69,13 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'home-cta',
     page: 'home',
     selector: '#tour-get-started',
-    title: '🚀 Get Started Free',
-    description: 'Ready? Click "Get Started Free" to create your account. It\'s completely free!',
+    title: '🚀 Ready to Start?',
+    description: 'Click this button to dive in! If you are new, it will take you to sign up. If you are already logged in, it will take you straight to your Wardrobe.',
     scrollTo: '#tour-get-started',
     arrowDirection: 'down',
     position: 'top',
-    navigateTo: '/login?tour=true&step=6',
+    waitForAction: true,
+    nextOnGotIt: false,   // hide dialog but keep highlight; user must click the button
   },
 
   // ── Login Page ──
@@ -80,29 +83,37 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'login-welcome',
     page: 'login',
     title: '🔐 Sign In or Sign Up',
-    description: 'Already have an account? Use the "Sign In" tab. First time here? Click "Sign Up" to create your account!',
+    description: 'Welcome back! Use "Sign In" to access your wardrobe. If you\'re new here, click "Sign Up" to create your free account and let\'s get started!',
     selector: '#tour-login-tabs',
     arrowDirection: 'up',
     position: 'bottom',
-  },
-  {
-    id: 'login-signin-tab',
-    page: 'login',
-    selector: '#tour-signin-tab',
-    title: '👤 Returning User? Sign In',
-    description: 'If you already have an account, click Sign In and enter your credentials.',
-    arrowDirection: 'up',
-    position: 'bottom',
-  },
-  {
-    id: 'login-signup-tab',
-    page: 'login',
-    selector: '#tour-signup-tab',
-    title: '✨ New Here? Sign Up!',
-    description: 'Fill in your details to create an account. The more you fill in (like gender and skin undertone), the better your outfit suggestions!',
-    arrowDirection: 'up',
-    position: 'bottom',
     waitForAction: true,
+    // nextOnGotIt intentionally absent — Got It calls nextStep() which goes to login-idle (invisible)
+  },
+  {
+    id: 'login-idle',
+    page: 'login',
+    title: '',
+    description: '',
+    invisible: true,
+  },
+  {
+    id: 'login-signup-fill',
+    page: 'login',
+    title: '✍️ Enter Your Details',
+    description: 'Fill in your sign-up details below. We use this to personalize your virtual try-on avatar!',
+    selector: '#tour-signup-form',
+    scrollTo: '#tour-signup-form',
+    position: 'bottom',
+    arrowDirection: 'up',
+    waitForAction: true,
+  },
+  {
+    id: 'login-signup-idle',
+    page: 'login',
+    title: '',
+    description: '',
+    invisible: true,
   },
 
   // ── Wardrobe Page ──
@@ -122,6 +133,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'down',
     position: 'top',
     waitForAction: true,
+    nextOnGotIt: false,   // user must actually click the upload button
   },
   {
     id: 'wardrobe-color',
@@ -150,6 +162,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'up',
     position: 'bottom',
     waitForAction: true,
+    nextOnGotIt: false,
   },
   {
     id: 'wardrobe-reminder',
@@ -168,6 +181,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'up',
     position: 'bottom',
     waitForAction: true,
+    nextOnGotIt: false,
   },
 
   // ── Randomizer Page ──
@@ -197,6 +211,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'down',
     position: 'top',
     waitForAction: true,
+    nextOnGotIt: false,
   },
   {
     id: 'randomizer-button',
@@ -208,6 +223,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'up',
     position: 'bottom',
     waitForAction: true,
+    nextOnGotIt: false,
   },
   {
     id: 'randomizer-avatar',
@@ -219,6 +235,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'up',
     position: 'bottom',
     waitForAction: true,
+    nextOnGotIt: false,
   },
   {
     id: 'nav-event-planner',
@@ -229,6 +246,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'up',
     position: 'bottom',
     waitForAction: true,
+    nextOnGotIt: false,
   },
 
   // ── Event Planner Page ──
@@ -248,6 +266,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'up',
     position: 'bottom',
     waitForAction: true,
+    nextOnGotIt: false,
   },
   {
     id: 'event-title',
@@ -267,6 +286,7 @@ export const TOUR_STEPS: TourStep[] = [
     arrowDirection: 'up',
     position: 'bottom',
     waitForAction: true,
+    nextOnGotIt: false,
   },
   {
     id: 'tour-complete',
@@ -290,6 +310,10 @@ interface TourContextType {
   goToStep: (index: number) => void;
   advanceIfOnStep: (stepId: string) => void;
   tourCompleted: boolean;
+  /** Called by LoginPage when user switches to the sign-up tab during the tour */
+  notifySignupTabActive: () => void;
+  /** Called by LoginPage when user switches back to sign-in tab during the tour */
+  notifySigninTabActive: () => void;
 }
 
 const TourContext = createContext<TourContextType | undefined>(undefined);
@@ -384,6 +408,32 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isTourActive, currentStepIndex, nextStep]);
 
+  /**
+   * Called by LoginPage when the user switches to the Sign-Up tab.
+   * If we're on the `login-welcome` or `login-idle` step, jump to `login-signup-fill`.
+   */
+  const notifySignupTabActive = useCallback(() => {
+    if (!isTourActive) return;
+    const currentId = TOUR_STEPS[currentStepIndex]?.id;
+    if (currentId === 'login-welcome' || currentId === 'login-idle') {
+      const target = TOUR_STEPS.findIndex(s => s.id === 'login-signup-fill');
+      if (target !== -1) setCurrentStepIndex(target);
+    }
+  }, [isTourActive, currentStepIndex]);
+
+  /**
+   * Called by LoginPage when the user switches back to the Sign-In tab.
+   * If we're on `login-signup-fill`, go back to `login-idle` (highlight hidden).
+   */
+  const notifySigninTabActive = useCallback(() => {
+    if (!isTourActive) return;
+    const currentId = TOUR_STEPS[currentStepIndex]?.id;
+    if (currentId === 'login-signup-fill' || currentId === 'login-signup-idle') {
+      const target = TOUR_STEPS.findIndex(s => s.id === 'login-idle');
+      if (target !== -1) setCurrentStepIndex(target);
+    }
+  }, [isTourActive, currentStepIndex]);
+
   // Resume tour from sessionStorage on page load (after navigation)
   useEffect(() => {
     const storedStep = sessionStorage.getItem('ld_tour_step');
@@ -418,6 +468,8 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       goToStep,
       advanceIfOnStep,
       tourCompleted,
+      notifySignupTabActive,
+      notifySigninTabActive,
     }}>
       {children}
     </TourContext.Provider>
